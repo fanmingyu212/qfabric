@@ -1,0 +1,327 @@
+from abc import abstractmethod
+from dataclasses import dataclass
+
+import numpy as np
+import numpy.typing as npt
+
+
+@dataclass
+class Function:
+    """
+    Base class for all analog or digital functions.
+
+    All subclasses are decorated by :deco:`dataclass`. All attributes of these
+    subclasses that affect the output of the function should be defined as `field`
+    (annotated instance variables), see :attr:`AnalogSum.functions` for an example.
+    Without defining these attributes as fields, the AWG memory loaded may not be correct.
+
+    All subclasses used as actual functions should override :meth:`min_duration`.
+    """
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        dataclass(cls)
+
+    @property
+    @abstractmethod
+    def min_duration(self) -> float:
+        """Minimum duration of this function."""
+
+
+class AnalogFunction(Function):
+    """
+    Base class for all analog functions.
+
+    All subclasses should override :meth:`output`.
+    """
+
+    @abstractmethod
+    def output(
+        self, times: npt.NDArray[np.float64], time_offset: float = 0
+    ) -> npt.NDArray[np.float64]:
+        """
+        Outputs of the analog function.
+
+        Args:
+            times (npt.NDArray[np.float64]): Times to evaluate the function at.
+            time_offset (float):
+                Time offset to keep phase coherence condition for :class:`AnalogSequence`.
+                For an oscillating signal, the phase calculation should use timestamps
+                as `times + time_offset`. See :class:`~qfabric.sequence.basic_functions.SineWave`
+                as an example.
+
+        Returns:
+            npt.NDArray[np.float64]: output.
+        """
+
+
+class AnalogEmpty(AnalogFunction):
+    """
+    Analog function with zero output.
+    """
+
+    def output(
+        self, times: npt.NDArray[np.float64], time_offset: float = 0
+    ) -> npt.NDArray[np.float64]:
+        return np.zeros(len(times), dtype=np.float64)
+
+    @property
+    def min_duration(self):
+        return 0
+
+
+class DigitalFunction(Function):
+    """
+    Base class for all digital functions.
+
+    All subclasses should override :meth:`output`.
+    """
+
+    @abstractmethod
+    def output(self, times: npt.NDArray[np.float64]) -> npt.NDArray[np.bool]:
+        """
+        Outputs of the digital function.
+
+        Args:
+            times (npt.NDArray[np.float64]): Times to evaluate the function at.
+
+        Returns:
+            npt.NDArray[np.bool]: output.
+        """
+
+
+class DigitalEmpty(DigitalFunction):
+    """
+    Digital function with zero output.
+    """
+
+    def output(self, times: npt.NDArray[np.float64]) -> npt.NDArray[np.bool]:
+        return np.zeros(len(times), dtype=np.bool)
+
+    @property
+    def min_duration(self):
+        return 0
+
+
+class AnalogSum(AnalogFunction):
+    """
+    Sum of multiple analog functions.
+
+    Args:
+        function_1 (AnalogFunction): Function 1 to be summed.
+        *functions (AnalogFunction): Other functions to be summed.
+    """
+
+    functions: list[AnalogFunction]
+
+    def __init__(
+        self,
+        function_1: AnalogFunction,
+        *functions: AnalogFunction,
+    ):
+        self.functions: list[AnalogFunction] = [function_1] + list(functions)
+
+    @property
+    def min_duration(self) -> float:
+        value = 0
+        for function in self.functions:
+            if value < function.min_duration:
+                value = function.min_duration
+        return value
+
+    def output(
+        self, times: npt.NDArray[np.float64], time_offset: float = 0
+    ) -> npt.NDArray[np.float64]:
+        result = np.zeros(len(times), dtype=float)
+        for function in self.functions:
+            result += function.output(times, time_offset)
+        return result
+
+
+class AnalogProduct(AnalogFunction):
+    """
+    Product of multiple analog functions.
+
+    Args:
+        function_1 (AnalogFunction): Function 1 to be multiplied.
+        *functions (AnalogFunction): Other functions to be multiplied.
+    """
+
+    functions: list[AnalogFunction]
+
+    def __init__(
+        self,
+        function_1: AnalogFunction,
+        *functions: AnalogFunction,
+    ):
+        self.functions: list[AnalogFunction] = [function_1] + list(functions)
+
+    @property
+    def min_duration(self) -> float:
+        value = 0
+        for function in self.functions:
+            if value < function.min_duration:
+                value = function.min_duration
+        return value
+
+    def output(
+        self, times: npt.NDArray[np.float64], time_offset: float = 0
+    ) -> npt.NDArray[np.float64]:
+        result = np.ones(len(times), dtype=float)
+        for function in self.functions:
+            result *= function.output(times, time_offset)
+        return result
+
+
+class AnalogSequence(AnalogFunction):
+    """
+    Sequence of analog functions.
+
+    This is useful to build longer steps containing multiple analog pulses on the same channel,
+    with optional phase coherence between the pulses.
+    """
+
+    functions: list[AnalogFunction]
+    start_times: list[float]
+    durations: list[float]
+    use_coherent_phases: list[bool]
+
+    def __init__(self):
+        self.functions: list[AnalogFunction] = []
+        self.start_times: list[float] = []
+        self.durations: list[float] = []
+        self.use_coherent_phases: list[bool] = []
+
+    def add_function(
+        self,
+        function: AnalogFunction,
+        delay_time_after_previous: float = 0,
+        duration: float = None,
+        coherent_phase: bool = False,
+    ):
+        """
+        Appends an analog function.
+
+        Args:
+            function (AnalogFunction): Analog function to be appended.
+            delay_time_after_previous (float): Delay time after the previous function. Default 0.
+            duration (float):
+                Duration of this function. If None, the minimum function duration is used.
+            coherent_phase (bool):
+                If True, the phase of the function is calculated relative to the start of this
+                function sequence. Otherwise, the phase of the function is calculated relative to
+                the start of this appended function.
+        """
+        if delay_time_after_previous < 0:
+            raise ValueError("Delay time after the previous function cannot be less than 0.")
+        start_time = self.min_duration + delay_time_after_previous
+        if duration is None:
+            duration = function.min_duration
+            if np.isclose(duration, 0, atol=1e-12):
+                raise ValueError(
+                    f"Duration must be defined as the function {function} does not have a well-defined duration."
+                )
+        elif duration < 0:
+            raise ValueError("Duration cannot be less than 0 s.")
+
+        self.functions.append(function)
+        self.start_times.append(start_time)
+        self.durations.append(duration)
+        self.use_coherent_phases.append(coherent_phase)
+
+    @property
+    def min_duration(self) -> float:
+        value = 0
+        if len(self.start_times) > 0:
+            value = self.start_times[-1] + self.durations[-1]
+        return value
+
+    def output(
+        self, times: npt.NDArray[np.float64], time_offset: float = 0
+    ) -> npt.NDArray[np.float64]:
+        condlist = []
+        funclist = []
+        for kk in range(len(self.functions)):
+            function = self.functions[kk].output
+            start_time = self.start_times[kk]
+            stop_time = start_time + self.durations[kk]
+            condlist.append((times >= start_time) & (times < stop_time))
+            if self.use_coherent_phases[kk]:
+                time_offset_this_pulse = time_offset + start_time
+            else:
+                time_offset_this_pulse = 0
+            funclist.append(
+                lambda ts, t_start=start_time, t_offset=time_offset_this_pulse, f=function: f(
+                    ts - t_start, t_offset
+                )
+            )
+        funclist.append(0)
+        return np.piecewise(times, condlist, funclist)
+
+
+class DigitalSequence(DigitalFunction):
+    """
+    Sequence of digital functions.
+
+    This is useful to build longer steps containing multiple digital pulses on the same channel.
+    """
+
+    functions: list[AnalogFunction]
+    start_times: list[float]
+    durations: list[float]
+    use_coherent_phases: list[bool]
+
+    def __init__(self, default_on: bool = False):
+        self.default_on: bool = default_on
+        self.functions: list[DigitalFunction] = []
+        self.start_times: list[float] = []
+        self.durations: list[float] = []
+
+    def add_function(
+        self,
+        function: DigitalFunction,
+        delay_time_after_previous: float = 0,
+        duration: float = None,
+    ):
+        """
+        Appends a digital function.
+
+        Args:
+            function (DigitalFunction): Digital function to be appended.
+            delay_time_after_previous (float): Delay time after the previous function. Default 0.
+            duration (float):
+                Duration of this function. If None, the minimum function duration is used.
+        """
+        if delay_time_after_previous < 0:
+            raise ValueError("Delay time after the previous function cannot be less than 0 s.")
+        start_time = self.min_duration + delay_time_after_previous
+        if duration is None:
+            duration = function.min_duration
+            if np.isclose(duration, 0, atol=1e-12):
+                raise ValueError(
+                    f"Duration must be defined as the function {function} does not have a well-defined duration."
+                )
+        elif duration < 0:
+            raise ValueError("Duration cannot be less than 0 s.")
+        self.functions.append(function)
+        self.start_times.append(start_time)
+        self.durations.append(duration)
+
+    @property
+    def min_duration(self) -> float:
+        value = 0
+        if len(self.start_times) > 0:
+            value = self.start_times[-1] + self.durations[-1]
+        return value
+
+    def output(self, times: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        condlist = []
+        funclist = []
+        for kk in range(len(self.functions)):
+            function = self.functions[kk].output
+            start_time = self.start_times[kk]
+            stop_time = start_time + self.durations[kk]
+            condlist.append((times >= start_time) & (times < stop_time))
+            funclist.append(lambda ts, t_start=start_time, f=function: f(ts - t_start))
+        funclist.append(self.default_on)
+        return np.piecewise(times, condlist, funclist).astype(bool)

@@ -1,0 +1,38 @@
+[config]
+version = 1
+
+[[awgs]]
+name = "m4i6622_1"
+
+segmenter_module = "qfabric.planner.segmenter.m4i6622"
+segmenter_class = "M4i6622Segmenter"
+device_module = "qfabric.programmer.device.m4i6622"
+device_class = "M4i6622Device"
+
+  [awgs.segmenter_config]
+  analog_channels = [0, 1, 2, 3]
+  digital_channels = [0, 1, 2]
+  analog_channels_to_store_digital_data = [1, 2, 3]
+
+  [awgs.device_config]
+  resource = "/dev/spcm1"
+  principal_device = true
+  external_clock_frequency = 10000000
+
+[[awgs]]
+name = "m4i6622_2"
+
+segmenter_module = "qfabric.planner.segmenter.m4i6622"
+segmenter_class = "M4i6622Segmenter"
+device_module = "qfabric.programmer.device.m4i6622"
+device_class = "M4i6622Device"
+
+  [awgs.segmenter_config]
+  analog_channels = [4, 5, 6, 7]
+  digital_channels = [3, 4, 5]
+  analog_channels_to_store_digital_data = [5, 6, 7]
+
+  [awgs.device_config]
+  resource = "/dev/spcm2"
+  principal_device = false
+  external_clock_frequency = 10000000

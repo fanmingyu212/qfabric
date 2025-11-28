@@ -1,0 +1,20 @@
+[config]
+version = 1
+
+[[awgs]]
+name = "mock_1"
+
+segmenter_module = "qfabric.planner.segmenter.mock"
+segmenter_class = "MockSegmenter"
+device_module = "qfabric.programmer.device.mock"
+device_class = "MockDevice"
+
+  [awgs.segmenter_config]
+  analog_channels = [0, 1]
+  digital_channels = [0]
+  sample_rate = 1e6
+
+  [awgs.device_config]
+  resource = "mock_1"
+  principal_device = true
+  show_plot = true

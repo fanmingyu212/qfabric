@@ -1,0 +1,61 @@
+[build-system]
+requires = [
+    "hatchling",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "qfabric"
+version = "0.1.0"
+description = "AWG pulse sequence compiler, planner, and visualizer"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+  { name = "Mingyu Fan"}
+]
+dependencies = [
+  "numpy",
+  "pydantic",
+]
+
+[project.optional-dependencies]
+dev = [
+  # testing
+  "pytest",
+  "pytest-cov",
+  "matplotlib",
+
+  # code style
+  "black",
+  "isort",
+
+  # documentation generation
+  "sphinx",
+  "sphinx-autodoc-typehints",
+  "furo",
+  "myst-parser",
+  "sphinx-copybutton",
+  "sphinx-autobuild",
+  "sphinx-simplepdf",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qfabric"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312", "py313", "py314"]
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest]
+python_files = ["test_*.py"]
+addopts = ["--cov", "src/qfabric", "--cov-report", "html"]
+testpaths = ["tests"]
+
+[tool.coverage.report]
+omit = [
+  "src/qfabric/programmer/driver/m4i6622/*",
+  "src/qfabric/programmer/device/m4i6622.py",
+]

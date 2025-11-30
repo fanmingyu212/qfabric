@@ -94,7 +94,7 @@ class M4i6622Device(Device):
         Remove all unused segments that are already programmed.
         """
         programmed_segments: list[M4i6622Segment] = []
-        for segment_index, segment in self._programmed_segments:
+        for segment_index, segment in enumerate(self._programmed_segments):
             if segment in new_segments:
                 programmed_segments.append(segment)
             else:

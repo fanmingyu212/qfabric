@@ -19,7 +19,9 @@ class PatternData:
         num_digits = str(len(num_bytes))
         self.data = (header + "#" + num_digits + num_bytes).encode("ascii")
 
-        analog_8bit = np.clip(np.round((analog_data + amplitude) / (2 * amplitude) * 255), 0, 255).astype(np.uint16)
+        analog_8bit = np.clip(
+            np.round((analog_data + amplitude) / (2 * amplitude) * 255), 0, 255
+        ).astype(np.uint16)
         words = analog_8bit << 2
         words |= (digital_1 & 1).astype(np.uint16) << 13
         words |= (digital_2 & 1).astype(np.uint16) << 14

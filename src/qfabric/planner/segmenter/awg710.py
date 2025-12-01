@@ -84,10 +84,7 @@ class AWG710Segment(Segment):
         self._get_awg_data(device_step, analog_channel, digital_channels)
 
     def _get_awg_data(
-        self,
-        device_step: DeviceStep,
-        analog_channel: int,
-        digital_channels: list[int]
+        self, device_step: DeviceStep, analog_channel: int, digital_channels: list[int]
     ):
         times = np.arange(self.segment_size) * SAMPLE_TIME
         analog_func = device_step.analog_functions.get(analog_channel, AnalogEmpty())
@@ -136,11 +133,7 @@ class AWG710Segmenter(Segmenter):
             of a sequence.
     """
 
-    def __init__(
-        self,
-        analog_channels: list[int],
-        digital_channels: list[int]
-    ):
+    def __init__(self, analog_channels: list[int], digital_channels: list[int]):
         if len(analog_channels) != ANALOG_CHANNELS:
             raise ValueError(f"The number of analog channels must be {ANALOG_CHANNELS}.")
         if len(digital_channels) != DIGITAL_CHANNELS:

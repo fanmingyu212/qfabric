@@ -53,9 +53,7 @@ class AWG710Device(Device):
         )
 
     def program_segment_steps(self, segment_indices_and_repeats: list[tuple[int, int]]):
-        sequence_steps: list[tuple[str, int, int]] = [
-            ("start.PAT", 1, 2)
-        ]
+        sequence_steps: list[tuple[str, int, int]] = [("start.PAT", 1, 2)]
         for step_index, (segment_index, repeat) in enumerate(segment_indices_and_repeats):
             sequence_steps.append([f"pattern_{segment_index}.PAT", repeat, step_index + 3])
         sequence_steps[-1] = (sequence_steps[-1][0], sequence_steps[-1][1], 0)
@@ -82,7 +80,7 @@ class AWG710Device(Device):
     def setup_software_trigger(self):
         """
         This still uses the external trigger.
-        
+
         The force trigger works for external trigger.
         If set to internal trigger, it runs a periodic trigger internally.
         """

@@ -61,23 +61,19 @@ class AWG710Driver:
                 f"while expecting {len(query_indices)} responses "
                 f"for command {command_str}"
             )
-        
+
         self._get_next_error()
         return messages
 
     def _get_next_error(self):
         self._control.write("*ESR?\n".encode("ascii"))
         self._control.read_until(b"\n", timeout=1)
-        self._control.write(
-            (self._commands.get_next_error() + "\n").encode("ascii")
-        )
+        self._control.write((self._commands.get_next_error() + "\n").encode("ascii"))
         result = self._control.read_until(b"\n", timeout=1).decode("ascii")
         if int(result.split(",")[0]) != 0:
             raise RuntimeError(f"Failed with error: {result}")
 
-    def _startup(
-        self, internal_reference: bool, waveform_sample_frequency: float
-    ):
+    def _startup(self, internal_reference: bool, waveform_sample_frequency: float):
         self._send_or_query("*CLS")
         if internal_reference:
             reference_source = "INTERNAL"
@@ -176,6 +172,7 @@ class AWG710Driver:
     def _remove_ftp_dir_recursive(self, path: str):
         local_dirs: list[str] = []
         local_files: list[str] = []
+
         def worker(line):
             is_directory = line[0] == "d"
             filename = line.split(" ")[-1]
@@ -186,7 +183,7 @@ class AWG710Driver:
                 local_dirs.append(full_path)
             else:
                 local_files.append(full_path)
-        
+
         self._ftp.dir(path, worker)
         for filename in local_files:
             self.delete(filename)

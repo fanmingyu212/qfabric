@@ -11,11 +11,13 @@ description = "AWG pulse sequence compiler, planner, and visualizer"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [
-  { name = "Mingyu Fan"}
+  { name = "Mingyu Fan" }
 ]
 dependencies = [
   "numpy",
   "pydantic",
+  "bokeh",
+  "matplotlib",
 ]
 
 [project.optional-dependencies]
@@ -23,7 +25,6 @@ dev = [
   # testing
   "pytest",
   "pytest-cov",
-  "matplotlib",
 
   # code style
   "black",

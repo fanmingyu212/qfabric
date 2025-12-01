@@ -2,6 +2,8 @@
 
 qFabric is a python package for controlling multiple AWGs using a universal interface designed for quantum physics experiments.
 
+This package is still in development. The private and public APIs may change.
+
 ### Installation
 
 For users of `qFabric`, you can download the repository zip file, unzip it, navigate to the unzipped folder (containing `pyproject.toml`), and run `pip install .`.

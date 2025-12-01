@@ -2,6 +2,9 @@ import time
 from datetime import datetime
 from typing import Any
 
+import numpy as np
+
+from qfabric.planner.segmenter.awg710 import AWG710Segment, AWG710Segmenter
 from qfabric.programmer.device import Device
 from qfabric.programmer.driver.awg710 import AWG710Driver
 
@@ -26,7 +29,7 @@ class AWG710Device(Device):
 
     def program_memory(self, instructions: dict[str, Any]):
         segments: list[AWG710Segment] = instructions["segments"]
-        self._file_folder = datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%sss")
+        self._file_folder = datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f")
         self._driver.cd_ftp("/")
         self._driver.mkdir(self._file_folder)
         self._driver.cd_ftp("/" + self._file_folder)
@@ -40,11 +43,21 @@ class AWG710Device(Device):
                 segment.digital_2,
                 segment.sample_rate,
             )
+        filename = "start.PAT"
+        self._driver.create_pattern_file(
+            filename,
+            np.zeros(960, dtype=float),
+            np.zeros(960, dtype=bool),
+            np.zeros(960, dtype=bool),
+            segment.sample_rate,
+        )
 
     def program_segment_steps(self, segment_indices_and_repeats: list[tuple[int, int]]):
-        sequence_steps: list[tuple[str, int, int]] = []
+        sequence_steps: list[tuple[str, int, int]] = [
+            ("start.PAT", 1, 2)
+        ]
         for step_index, (segment_index, repeat) in enumerate(segment_indices_and_repeats):
-            sequence_steps.append([f"pattern_{segment_index}.PAT", repeat, step_index + 1])
+            sequence_steps.append([f"pattern_{segment_index}.PAT", repeat, step_index + 3])
         sequence_steps[-1] = (sequence_steps[-1][0], sequence_steps[-1][1], 0)
 
         self._driver.cd_ftp("/" + self._file_folder)
@@ -54,9 +67,10 @@ class AWG710Device(Device):
 
     def start(self):
         self._driver.start()
+        self._driver.trigger_now()
 
     def wait_until_complete(self):
-        while self._driver.get_run_state() > 0:
+        while self._driver.get_run_state() == 2:
             time.sleep(1e-3)
 
     def stop(self):
@@ -66,4 +80,10 @@ class AWG710Device(Device):
         self._driver.set_trigger_source(external=True)
 
     def setup_software_trigger(self):
-        self._driver.set_trigger_source(external=False)
+        """
+        This still uses the external trigger.
+        
+        The force trigger works for external trigger.
+        If set to internal trigger, it runs a periodic trigger internally.
+        """
+        self._driver.set_trigger_source(external=True)

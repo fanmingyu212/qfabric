@@ -31,7 +31,9 @@ class AWG710Driver:
     def __init__(
         self,
         address: str,
-        principal_card: bool = False,
+        principal_card: bool,
+        ftp_user: str,
+        ftp_password: str,
         external_reference: bool = False,
         waveform_sample_freq: float = 4e9,
     ):
@@ -39,50 +41,56 @@ class AWG710Driver:
         self._principal_card = principal_card
         self._control = Telnet(address, PORT)
         self._ftp = FTP(address)
-        self._ftp.login()
+        self._ftp.login(user=ftp_user, passwd=ftp_password)
 
         self._commands = AWG710Commands()
 
-        self._startup(not external_reference, self._principal_card, waveform_sample_freq)
+        self._startup(not external_reference, waveform_sample_freq)
 
     def _send_or_query(self, commands: str | list[str]) -> list[str]:
         if not isinstance(commands, list):
             commands = [commands]
-        command_str = ";".join(commands)
-        self._control.write(command_str)
+        command_str = ";".join(commands) + "\n"
+        self._control.write(command_str.encode("ascii"))
         query_indices = [commands.index(command) for command in commands if command.endswith("?")]
-        if len(query_indices) > 0:
-            response = self._control.read_all()
-            messages = response.split(";")
-            if len(messages) != len(query_indices):
-                raise RuntimeError(
-                    f"Got {len(messages)} of responses "
-                    f"while expecting {len(query_indices)} responses "
-                    f"for command {command_str}"
-                )
-            return messages
-        else:
-            return []
+        response = self._control.read_until(b"\n", timeout=1)
+        messages = response.decode("ascii").split(";")
+        if len(messages) != len(query_indices) and messages != [""]:
+            raise RuntimeError(
+                f"Got {len(messages)} of responses "
+                f"while expecting {len(query_indices)} responses "
+                f"for command {command_str}"
+            )
+        
+        self._get_next_error()
+        return messages
+
+    def _get_next_error(self):
+        self._control.write("*ESR?\n".encode("ascii"))
+        self._control.read_until(b"\n", timeout=1)
+        self._control.write(
+            (self._commands.get_next_error() + "\n").encode("ascii")
+        )
+        result = self._control.read_until(b"\n", timeout=1).decode("ascii")
+        if int(result.split(",")[0]) != 0:
+            raise RuntimeError(f"Failed with error: {result}")
 
     def _startup(
-        self, internal_reference: bool, internal_trigger: bool, waveform_sample_frequency: float
+        self, internal_reference: bool, waveform_sample_frequency: float
     ):
-        if internal_trigger:
-            trigger_source = "INTERNEL"
-        else:
-            trigger_source = "EXTERNAL"
+        self._send_or_query("*CLS")
         if internal_reference:
-            reference_source = "INTERNEL"
+            reference_source = "INTERNAL"
         else:
             reference_source = "EXTERNAL"
         self._send_or_query(
             [
                 self._commands.set_run_mode("ENH"),
-                self._commands.stop_output(),
+                self._commands.stop(),
                 self._commands.select_default_storage(),
                 self._commands.set_output_amplitude(2),
                 self._commands.set_output_offset(0),
-                self._commands.set_trigger_source(trigger_source),
+                self._commands.set_trigger_source("EXTERNAL"),
                 self._commands.set_oscillator_reference(reference_source),
                 self._commands.set_waveform_sample_frequency(waveform_sample_frequency),
                 self._commands.set_output_state(True),
@@ -107,13 +115,13 @@ class AWG710Driver:
             int: 0 - stopped, 1 - waiting for trigger, 2 - running.
         """
         val = self._send_or_query(self._commands.get_run_state())
-        return int(val)
+        return int(val[0])
 
     def start(self):
-        self._send_or_query(self._commands.start_output())
+        self._send_or_query(self._commands.start())
 
     def stop(self):
-        self._send_or_query(self._commands.stop_output())
+        self._send_or_query(self._commands.stop())
 
     def cd_telnet(self, path: str):
         self._send_or_query(self._commands.cd(path))
@@ -149,23 +157,12 @@ class AWG710Driver:
 
     def create_sequence_file(self, file_name: str, step_info: list[tuple[str, int, int]]):
         lines = []
+        trigger = True
         for name, repeat, next_step in step_info:
-            lines.append(name, repeat, False, next_step)
+            lines.append((name, repeat, trigger, next_step))
+            trigger = False
         sequence = SequenceData(lines)
         self._create_file(file_name, sequence.data)
-
-    def _remove_ftp_dir_recursive(self, path: str):
-        for name, properties in self._ftp.mlsd(path=path):
-            if name in (".", ".."):
-                continue
-
-            full_path = os.path.join(path, name).replace("\\", "/")
-
-            if properties.get("type") == "file":
-                self._ftp.delete(full_path)
-            elif properties.get("type") == "dir":
-                self._remove_ftp_dir_recursive(full_path)
-        self._ftp.rmd(path)
 
     def remove_all_files_in_directory(self, directory: str = "/", skip_ask: bool = False):
         if directory == "/":
@@ -175,3 +172,25 @@ class AWG710Driver:
                     print("File deletion cancelled.")
                     return
         self._remove_ftp_dir_recursive(directory)
+
+    def _remove_ftp_dir_recursive(self, path: str):
+        local_dirs: list[str] = []
+        local_files: list[str] = []
+        def worker(line):
+            is_directory = line[0] == "d"
+            filename = line.split(" ")[-1]
+            if filename in (".", ".."):
+                return
+            full_path = os.path.join(path, filename).replace("\\", "/")
+            if is_directory:
+                local_dirs.append(full_path)
+            else:
+                local_files.append(full_path)
+        
+        self._ftp.dir(path, worker)
+        for filename in local_files:
+            self.delete(filename)
+        for dir in local_dirs:
+            self._remove_ftp_dir_recursive(dir)
+        if path != "/":
+            self.rmdir(path)

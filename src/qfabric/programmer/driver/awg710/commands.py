@@ -98,10 +98,10 @@ class AWG710Commands:
     def get_run_state(self) -> str:
         return ":AWGC:RST?"
 
-    def start_output(self) -> str:
+    def start(self) -> str:
         return ":AWGC:RUN"
 
-    def stop_output(self) -> str:
+    def stop(self) -> str:
         return ":AWGC:STOP"
 
     def restore_settings(
@@ -277,3 +277,6 @@ class AWG710Commands:
         if period < 1e-3 or period > 10:
             raise ValueError("Trigger period must be between 1 ms to 10 s.")
         return f":TRIG:TIM {period}"
+
+    def get_next_error(self) -> str:
+        return ":SYST:ERR?"

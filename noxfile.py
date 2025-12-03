@@ -42,4 +42,6 @@ def docs_live(session):
         "docs/build/html",
         "--watch",
         "src/qfabric",
+        "--port",
+        "0",
     )

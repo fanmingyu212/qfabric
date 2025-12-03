@@ -3,7 +3,7 @@ Quickstart
 
 First, set up the config file for the AWG devices installed (See :doc:`../how_to/how_to_config`).
 If you just want to test the package without using a physical AWG, use the following config.
-This config simply plots the AWG data. ``matplotlib`` is needed.
+This config simply plots the AWG data using ``matplotlib``.
 
 .. code-block:: toml
 

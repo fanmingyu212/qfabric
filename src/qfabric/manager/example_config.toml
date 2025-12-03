@@ -1,5 +1,6 @@
 [config]
 version = 1
+digital_channel_synchronize = 0  # comment out if no digital channel is used for synchronization
 
 [[awgs]]
 name = "m4i6622_1"
@@ -16,7 +17,6 @@ device_class = "M4i6622Device"
 
   [awgs.device_config]
   resource = "/dev/spcm1"
-  principal_device = true
   external_clock_frequency = 10000000
 
 [[awgs]]
@@ -34,5 +34,4 @@ device_class = "M4i6622Device"
 
   [awgs.device_config]
   resource = "/dev/spcm2"
-  principal_device = false
   external_clock_frequency = 10000000

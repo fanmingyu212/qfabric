@@ -18,10 +18,10 @@ def test_Sequence():
     np.testing.assert_allclose(sequence.nominal_duration, 12.1e-3)
 
     val = sequence.get_steps()
-    out = [StartStep(), state_prep, EmptyStep(1e-3), probe, measure, StopStep()]
+    out = [state_prep, EmptyStep(1e-3), probe, measure]
     np.testing.assert_equal(val, out)
     val = sequence.get_repeats()
-    out = [1, 1, 1, 1, 10, 1]
+    out = [1, 1, 1, 10]
     np.testing.assert_equal(val, out)
 
     sequence_1 = Sequence()

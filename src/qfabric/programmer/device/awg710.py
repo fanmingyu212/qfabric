@@ -16,15 +16,14 @@ class AWG710Device(Device):
     Args:
         segmenter (AWG710Segmenter): Segmenter for this AWG device.
         resource (str): Resource name of the device.
-        principal_device (bool): Whether the device is a principal device (controlling other AWGs).
         **kwargs:
             See :class:`~qfabric.programmer.driver.awg710.AWG710Driver` for
             optional keyword arguments.
     """
 
-    def __init__(self, segmenter: AWG710Segmenter, resource: str, principal_device: bool, **kwargs):
-        super().__init__(segmenter, resource, principal_device)
-        self._driver = AWG710Driver(resource, principal_device, **kwargs)
+    def __init__(self, segmenter: AWG710Segmenter, resource: str, **kwargs):
+        super().__init__(segmenter, resource)
+        self._driver = AWG710Driver(resource, self.is_principal_device, **kwargs)
         self._file_folder: str = None
 
     def program_memory(self, instructions: dict[str, Any]):

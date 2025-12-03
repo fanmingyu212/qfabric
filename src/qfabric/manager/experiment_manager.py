@@ -40,12 +40,14 @@ class ExperimentManager:
         devices: list[Device] = []
         for awg in self._config.awgs:
             segmenter_class = _dynamic_import(awg.segmenter_module, awg.segmenter_class)
-            segmenter = segmenter_class(**awg.segmenter_config.model_dump())
+            segmenter: Segmenter = segmenter_class(**awg.segmenter_config.model_dump())
+            if self._config.digital_channel_synchronize in segmenter._digital_channels:
+                segmenter.trigger_device = True
             segmenters.append(segmenter)
             device_class = _dynamic_import(awg.device_module, awg.device_class)
-            device = device_class(segmenter=segmenter, **awg.device_config.model_dump())
+            device: Device = device_class(segmenter=segmenter, **awg.device_config.model_dump())
             devices.append(device)
-        self.planner = Planner(segmenters)
+        self.planner = Planner(segmenters, self._config.digital_channel_synchronize)
         self.programmer = Programmer(devices)
 
         # links the memory and segment step programming functions of the device

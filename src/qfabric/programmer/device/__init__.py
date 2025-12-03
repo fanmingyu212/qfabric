@@ -15,13 +15,12 @@ class Device:
     Args:
         segmenter (Segmenter): Segmenter for this AWG device.
         resource (str): Resource name of the device.
-        principal_device (bool): Whether the device is a principal device (controlling other AWGs).
     """
 
-    def __init__(self, segmenter: Segmenter, resource: str, principal_device: bool, **kwargs):
+    def __init__(self, segmenter: Segmenter, resource: str):
         self._segmenter = segmenter
         self._resource = resource
-        self.is_principal_device = principal_device
+        self.is_principal_device = self._segmenter.trigger_device
 
     @abstractmethod
     def program_memory(self, instructions: Any):

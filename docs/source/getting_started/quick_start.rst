@@ -9,6 +9,7 @@ This config simply plots the AWG data using ``matplotlib``.
 
    [config]
    version = 1
+   digital_channel_synchronize = 0  # comment out if no digital channel is used for synchronization
    
    [[awgs]]
    name = "mock_1"
@@ -25,7 +26,6 @@ This config simply plots the AWG data using ``matplotlib``.
    
      [awgs.device_config]
      resource = "mock_1"
-     principal_device = true
      show_plot = true
 
 Also, write a pulse sequence that you would like to run (See :doc:`sequence`). An example sequence is shown below:

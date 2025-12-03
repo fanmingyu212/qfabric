@@ -37,6 +37,7 @@ class Segmenter:
         digital_channels (list[int]): Digital channel indices.
 
     Attributes:
+        trigger_device (bool): Whether this AWG is used to trigger other AWGs.
         _device_steps (list[DeviceStep]):
             See :meth:`set_steps`, device steps scheduled on this device.
             All unique device_steps are saved in it.
@@ -47,6 +48,7 @@ class Segmenter:
     def __init__(self, analog_channels: list[int], digital_channels: list[int]):
         self._analog_channels = analog_channels
         self._digital_channels = digital_channels
+        self.trigger_device = False
 
     @abstractmethod
     def set_steps(self, steps: list[Step], sequence_to_steps_map: dict[int, list[int]]):

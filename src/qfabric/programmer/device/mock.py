@@ -14,18 +14,13 @@ class MockDevice(Device):
     Args:
         segmenter (MockSegmenter): Segmenter for this AWG device.
         resource (str): Resource name of the device. This is unused as it is a mock device.
-        principal_device (bool):
-            Whether the device is a principal device (controlling other AWGs).
-            This is unused as it is a mock device.
         show_plot (bool): Whether shows a plot of the analog and digital data.
     """
 
-    def __init__(
-        self, segmenter: MockSegmenter, resource: str, principal_device: bool, show_plot: bool
-    ):
-        super().__init__(segmenter, resource, principal_device)
+    def __init__(self, segmenter: MockSegmenter, resource: str, show_plot: bool):
+        super().__init__(segmenter, resource)
         self._show_plot = show_plot
-        if principal_device:
+        if self.is_principal_device:
             self._external_trigger = False
         else:
             self._external_trigger = True

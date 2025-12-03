@@ -1,21 +1,14 @@
 import numpy as np
 
-from qfabric.sequence.step import EmptyStep, StartStep, Step, StopStep
+from qfabric.sequence.step import EmptyStep, Step
 
 
 class Sequence:
     """
     Pulse sequence for an experiment.
-
-    Args:
-        start_step_digital_channel_on (int):
-            The digital channel turned on during the start step. Default 0.
-            If None, digital pulse is not used during the start step.
-            This pulse is useful for synchronizing several AWG devices or timestamping.
     """
 
-    def __init__(self, start_step_digital_channel_on: int = 0):
-        self._start_step_digital_channel_on = start_step_digital_channel_on
+    def __init__(self):
         self._steps: list[Step] = []
         self._repeats: list[int] = []
 
@@ -60,18 +53,23 @@ class Sequence:
 
     def get_steps(self) -> list[Step]:
         """
-        Gets all steps including the built-in start and stop steps.
+        Gets all steps.
+
+        The executed steps also include a start step and a stop step,
+        which are not included in the return value of this function.
+        The start and stop steps are added in the experiment manager before
+        programming the AWG devices.
 
         Returns:
             list[Step]: Steps of this sequence.
         """
-        return [StartStep(self._start_step_digital_channel_on)] + self._steps + [StopStep()]
+        return self._steps
 
     def get_repeats(self) -> list[int]:
         """
-        Gets number of repeats of each step including the built-in start and stop steps.
+        Gets number of repeats of each step.
 
         Returns:
             list[int]: Number of repeats of each step of this sequence.
         """
-        return [1] + self._repeats + [1]
+        return self._repeats

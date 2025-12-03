@@ -23,7 +23,6 @@ class DeviceConfig(BaseModel, extra="allow"):
     """
 
     resource: str
-    principal_device: bool
 
 
 class AWGConfig(BaseModel):
@@ -47,6 +46,7 @@ class HardwareConfig(BaseModel):
     """
 
     version: int
+    digital_channel_synchronize: int | None
     awgs: List[AWGConfig]
 
 
@@ -63,8 +63,10 @@ def load_hardware_config(path: str) -> HardwareConfig:
     with open(path, "rb") as f:
         raw = tomllib.load(f)
 
+    config = raw.get("config", {})
     data = {
-        "version": raw.get("config", {}).get("version"),
+        "version": config.get("version"),
+        "digital_channel_synchronize": config.get("digital_channel_synchronize", None),
         "awgs": raw.get("awgs", []),
     }
 
@@ -77,4 +79,6 @@ def load_hardware_config(path: str) -> HardwareConfig:
         raise ValueError("Analog channels defined in the config file have duplicates.")
     if len(digital_channels_defined) != len(set(digital_channels_defined)):
         raise ValueError("Digital channels defined in the config file have duplicates.")
+    if data["digital_channel_synchronize"] not in digital_channels_defined:
+        raise ValueError("Synchronization digital channel is not in the digital channels defined.")
     return HardwareConfig.model_validate(data)

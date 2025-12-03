@@ -21,6 +21,7 @@ from qfabric.planner.segmenter.m4i6622 import (
     get_segment_sample_size_from_time,
     voltages_to_awg_data,
 )
+from qfabric.sequence.step import StartStep, StopStep
 
 
 def test_get_segment_sample_size_from_time():
@@ -320,7 +321,7 @@ def test_M4i6622Segmenter():
     sequence_to_steps_map: dict[int, list[int]] = {}
     for sequence_index in range(len(sequences)):
         sequence = sequences[sequence_index]
-        steps = sequence.get_steps()
+        steps = [StartStep()] + sequence.get_steps() + [StopStep()]
         sequence_to_steps_map[sequence_index] = []
         for step_index in range(len(steps)):
             step = steps[step_index]
@@ -356,6 +357,7 @@ def test_M4i6622Segmenter():
 
     for sequence_index in [0, 1]:
         out_num_of_samples = 0
+        repeats = [1] + sequences[sequence_index].get_repeats() + [1]
         for step_order, step_index in enumerate(sequence_to_steps_map[sequence_index]):
             segment = segments[step_to_segment_map[step_index]]
             for (
@@ -366,15 +368,11 @@ def test_M4i6622Segmenter():
                     num_of_samples = m4i6622.valid_max_segment_block_size
                 else:
                     num_of_samples = len(segment.segment_blocks[segment_block_index].awg_data) // 4
-                out_num_of_samples += (
-                    num_of_samples
-                    * segment_block_repeat
-                    * sequences[sequence_index].get_repeats()[step_order]
-                )
+                out_num_of_samples += num_of_samples * segment_block_repeat * repeats[step_order]
         val_num_of_samples = 0
         sequence = sequences[sequence_index]
-        steps = sequence.get_steps()
-        repeats = sequence.get_repeats()
+        steps = [StartStep()] + sequence.get_steps() + [StopStep()]
+        repeats = [1] + sequence.get_repeats() + [1]
         for kk in range(len(steps)):
             val_num_of_samples += (
                 get_segment_sample_size_from_time(steps[kk].duration) * repeats[kk]

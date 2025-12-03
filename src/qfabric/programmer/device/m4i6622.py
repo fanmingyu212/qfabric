@@ -18,16 +18,13 @@ class M4i6622Device(Device):
     Args:
         segmenter (M4i6622Segmenter): Segmenter for this AWG device.
         resource (str): Resource name of the device.
-        principal_device (bool): Whether the device is a principal device (controlling other AWGs).
         **kwargs:
             See :class:`~qfabric.programmer.driver.m4i6622.M4i6622Driver` for
             optional keyword arguments.
     """
 
-    def __init__(
-        self, segmenter: M4i6622Segmenter, resource: str, principal_device: bool, **kwargs
-    ):
-        super().__init__(segmenter, resource, principal_device)
+    def __init__(self, segmenter: M4i6622Segmenter, resource: str, **kwargs):
+        super().__init__(segmenter, resource)
 
         # gets the ttl mapping to awg channels from the segmenter definition.
         ttl_to_awg_map: dict[int, int] = {}

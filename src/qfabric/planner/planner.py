@@ -3,7 +3,7 @@ from typing import Any, Callable
 
 from qfabric.planner.segmenter import Segmenter
 from qfabric.sequence.sequence import Sequence
-from qfabric.sequence.step import Step
+from qfabric.sequence.step import StartStep, Step, StopStep
 
 
 class Planner:
@@ -13,6 +13,9 @@ class Planner:
     Args:
         segmenters (list[Segmenter]):
             List of AWG segmenters. Each device corresponds to a segmenter.
+        digital_channel_synchronize (int):
+            Digital channel used to trigger other devices at the start of the sequence.
+            If None, no trigger is used.
 
     Attributes:
         _sequences (dict[int, Sequence]):
@@ -32,8 +35,9 @@ class Planner:
             sent to the AWG programmer device.
     """
 
-    def __init__(self, segmenters: list[Segmenter]):
+    def __init__(self, segmenters: list[Segmenter], digital_channel_synchronize: int):
         self._segmenters = segmenters
+        self.digital_channel_synchronize = digital_channel_synchronize
 
         self._sequence_counter = 0
         self._sequences: dict[int, Sequence] = {}
@@ -129,14 +133,18 @@ class Planner:
     def _deduplicate_steps(self) -> tuple[list[Step], dict[int, list[int]]]:
         """
         Gets non-duplicate steps in all scheduled sequences.
+
+        Always add start and stop steps in the sequence.
         """
         dedup_steps: list[Step] = []
         dedup_step_map: dict[int, list[int]] = {}
         dedup_sequence_indices: list[int] = list(dict.fromkeys(self._scheduled_sequences))
+        start_step = StartStep(self.digital_channel_synchronize)
+        stop_step = StopStep()
         for sequence_index in dedup_sequence_indices:
             sequence = self._sequences[sequence_index]
             dedup_step_map[sequence_index] = []
-            for step in sequence.get_steps():
+            for step in [start_step] + sequence.get_steps() + [stop_step]:
                 try:
                     step_index = dedup_steps.index(step)
                 except ValueError:
@@ -166,7 +174,7 @@ class Planner:
 
         for segmenter_index, segmenter in enumerate(self._segmenters):
             segment_indices_and_repeats: list[tuple[int, int]] = []
-            step_repeats = self._sequences[sequence_index].get_repeats()
+            step_repeats = [1] + self._sequences[sequence_index].get_repeats() + [1]
             for step_order, step_repeat in enumerate(step_repeats):
                 segment_indices_and_repeats.append(
                     (

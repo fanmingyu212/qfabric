@@ -1,5 +1,6 @@
 [config]
 version = 1
+digital_channel_synchronize = 0  # comment out if no digital channel is used for synchronization
 
 [[awgs]]
 name = "mock_1"
@@ -16,7 +17,6 @@ device_class = "MockDevice"
 
   [awgs.device_config]
   resource = "mock_1"
-  principal_device = true
   show_plot = false
 
 [[awgs]]
@@ -34,5 +34,4 @@ device_class = "MockDevice"
 
   [awgs.device_config]
   resource = "mock_2"
-  principal_device = false
   show_plot = false

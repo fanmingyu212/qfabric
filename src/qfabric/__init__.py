@@ -19,6 +19,7 @@ from qfabric.sequence.function import (
     DigitalSequence,
 )
 from qfabric.sequence.sequence import Sequence, Step
+from qfabric.visualizer.plot import logic_sequence, timeline_sequence
 
 __all__ = [
     "ExperimentManager",
@@ -39,4 +40,6 @@ __all__ = [
     "DigitalOff",
     "DigitalOn",
     "DigitalPulse",
+    "logic_sequence",
+    "timeline_sequence",
 ]

@@ -1,7 +1,15 @@
-from qfabric import DigitalPulse, LinearRamp, Sequence, SineSweep, SineWave, Step
-from qfabric.visualizer.plot import logic_sequence, timeline_sequence
+from qfabric import (
+    DigitalPulse,
+    LinearRamp,
+    Sequence,
+    SineSweep,
+    SineWave,
+    Step,
+    logic_sequence,
+    timeline_sequence,
+)
 
-plot_logic = True
+plot_logic = False  # change to True to see the plot in the logic mode.
 
 sequence = Sequence()
 

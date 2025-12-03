@@ -44,7 +44,6 @@ def _get_sequence_figure(sequence_model: SequenceModel, logic: bool):
     rect_kwargs = {"y": "y_label", "fill_color": "fill_color", "height": 0.8, "source": source}
     text_kwargs = {
         "y": "y_label",
-        "text": "name",
         "text_color": "#313131",
         "text_align": "center",
         "text_baseline": "middle",
@@ -53,7 +52,7 @@ def _get_sequence_figure(sequence_model: SequenceModel, logic: bool):
 
     if logic:
         rectangles = plot.rect(x="x_index", width=1, **rect_kwargs)
-        plot.text(x="x_index", **text_kwargs)
+        plot.text(x="x_index", text="name", **text_kwargs)
 
         num_steps = len(step_labels)
         plot.x_range = Range1d(-0.6, num_steps - 0.4)
@@ -61,7 +60,7 @@ def _get_sequence_figure(sequence_model: SequenceModel, logic: bool):
         plot.xaxis.major_label_overrides = dict(zip(np.arange(num_steps), step_labels))
     else:
         rectangles = plot.rect(x="center_time_ms", width="duration_ms", **rect_kwargs)
-        plot.text(x="center_time_ms", **text_kwargs)
+        plot.text(x="center_time_ms", text="name_and_repeat", **text_kwargs)
         plot.xaxis.axis_label = "Time (ms)"
 
     rectangles.nonselection_glyph.fill_alpha = 0.5

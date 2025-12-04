@@ -47,6 +47,37 @@ def test_AnalogSum_basic():
     expected = [2.5, 2.5, 3, 2, 2, 0]
     np.testing.assert_allclose(out, expected)
 
+    out = f.to_dict()
+    val = {
+        "import": {"module": "qfabric.sequence.function", "name": "AnalogSum"},
+        "fields": {
+            "functions": [
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "ConstantAnalog",
+                    },
+                    "fields": {"amplitude": 1.0, "start_time": None, "stop_time": 2.0},
+                },
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "ConstantAnalog",
+                    },
+                    "fields": {"amplitude": 2.0, "start_time": None, "stop_time": 5.0},
+                },
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "ConstantAnalog",
+                    },
+                    "fields": {"amplitude": -0.5, "start_time": None, "stop_time": 1.0},
+                },
+            ]
+        },
+    }
+    assert out == val
+
 
 def test_AnalogProduct_basic():
     f1 = ConstantAnalog(3.0, stop_time=4)
@@ -63,6 +94,37 @@ def test_AnalogProduct_basic():
     expected = [-6, -6, 0, 0, 0, 0]
     np.testing.assert_allclose(out, expected)
 
+    out = f.to_dict()
+    val = {
+        "import": {"module": "qfabric.sequence.function", "name": "AnalogProduct"},
+        "fields": {
+            "functions": [
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "ConstantAnalog",
+                    },
+                    "fields": {"amplitude": 3.0, "start_time": None, "stop_time": 4},
+                },
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "ConstantAnalog",
+                    },
+                    "fields": {"amplitude": 2.0, "start_time": None, "stop_time": 1},
+                },
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "ConstantAnalog",
+                    },
+                    "fields": {"amplitude": -1.0, "start_time": None, "stop_time": 5},
+                },
+            ]
+        },
+    }
+    assert out == val
+
 
 def test_AnalogSequence_add_and_min_duration():
     seq = AnalogSequence()
@@ -75,6 +137,33 @@ def test_AnalogSequence_add_and_min_duration():
 
     seq.add_function(f2, delay_time_after_previous=1.0)  # start=3, duration=3
     assert seq.min_duration == 6.0  # 3 + 3
+
+    out = seq.to_dict()
+    val = {
+        "import": {"module": "qfabric.sequence.function", "name": "AnalogSequence"},
+        "fields": {
+            "functions": [
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "ConstantAnalog",
+                    },
+                    "fields": {"amplitude": 1.0, "start_time": None, "stop_time": 2},
+                },
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "ConstantAnalog",
+                    },
+                    "fields": {"amplitude": 2.0, "start_time": None, "stop_time": 3},
+                },
+            ],
+            "start_times": [0, 3.0],
+            "durations": [2, 3],
+            "use_coherent_phases": [False, False],
+        },
+    }
+    assert out == val
 
 
 def test_AnalogSequence_output_no_overlap():
@@ -149,6 +238,32 @@ def test_DigitalSequence_add_and_min_duration():
 
     seq.add_function(f2, delay_time_after_previous=3.0)  # start=5, dur=1
     assert seq.min_duration == 6.0
+
+    out = seq.to_dict()
+    val = {
+        "import": {"module": "qfabric.sequence.function", "name": "DigitalSequence"},
+        "fields": {
+            "functions": [
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "DigitalPulse",
+                    },
+                    "fields": {"start_time": 1, "stop_time": 2, "default_off": True},
+                },
+                {
+                    "import": {
+                        "module": "qfabric.sequence.basic_functions",
+                        "name": "DigitalPulse",
+                    },
+                    "fields": {"start_time": 0, "stop_time": 1, "default_off": True},
+                },
+            ],
+            "start_times": [0, 5.0],
+            "durations": [2, 1],
+        },
+    }
+    assert out == val
 
 
 def test_DigitalSequence_output():

@@ -158,6 +158,19 @@ class AnalogSum(AnalogFunction):
             result += function.output(times, time_offset)
         return result
 
+    def to_dict(self) -> dict[str, Any]:
+        value = {}
+        value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
+        value["fields"] = {}
+        for field in fields(self):
+            if field.name != "functions":
+                value["fields"][field.name] = getattr(self, field.name)
+            else:
+                value["fields"]["functions"] = []
+                for function in self.functions:
+                    value["fields"]["functions"].append(function.to_dict())
+        return value
+
 
 class AnalogProduct(AnalogFunction):
     """
@@ -192,6 +205,19 @@ class AnalogProduct(AnalogFunction):
         for function in self.functions:
             result *= function.output(times, time_offset)
         return result
+
+    def to_dict(self) -> dict[str, Any]:
+        value = {}
+        value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
+        value["fields"] = {}
+        for field in fields(self):
+            if field.name != "functions":
+                value["fields"][field.name] = getattr(self, field.name)
+            else:
+                value["fields"]["functions"] = []
+                for function in self.functions:
+                    value["fields"]["functions"].append(function.to_dict())
+        return value
 
 
 class AnalogSequence(AnalogFunction):
@@ -279,6 +305,19 @@ class AnalogSequence(AnalogFunction):
         funclist.append(0)
         return np.piecewise(times, condlist, funclist)
 
+    def to_dict(self) -> dict[str, Any]:
+        value = {}
+        value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
+        value["fields"] = {}
+        for field in fields(self):
+            if field.name != "functions":
+                value["fields"][field.name] = getattr(self, field.name)
+            else:
+                value["fields"]["functions"] = []
+                for function in self.functions:
+                    value["fields"]["functions"].append(function.to_dict())
+        return value
+
 
 class DigitalSequence(DigitalFunction):
     """
@@ -290,7 +329,6 @@ class DigitalSequence(DigitalFunction):
     functions: list[AnalogFunction]
     start_times: list[float]
     durations: list[float]
-    use_coherent_phases: list[bool]
 
     def __init__(self, default_on: bool = False):
         self.default_on: bool = default_on
@@ -346,3 +384,16 @@ class DigitalSequence(DigitalFunction):
             funclist.append(lambda ts, t_start=start_time, f=function: f(ts - t_start))
         funclist.append(self.default_on)
         return np.piecewise(times, condlist, funclist).astype(bool)
+
+    def to_dict(self) -> dict[str, Any]:
+        value = {}
+        value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
+        value["fields"] = {}
+        for field in fields(self):
+            if field.name != "functions":
+                value["fields"][field.name] = getattr(self, field.name)
+            else:
+                value["fields"]["functions"] = []
+                for function in self.functions:
+                    value["fields"]["functions"].append(function.to_dict())
+        return value

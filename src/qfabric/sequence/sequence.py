@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 
 from qfabric.sequence.step import EmptyStep, Step
@@ -73,3 +75,18 @@ class Sequence:
             list[int]: Number of repeats of each step of this sequence.
         """
         return self._repeats
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Dict representation of the sequence, without function details.
+
+        This can be serialized to JSON for saving.
+
+        Returns:
+            dict[str, Any]: dict representation of the sequence.
+        """
+        value = {}
+        value["repeats"] = self._repeats
+        value["steps"] = [step.to_dict() for step in self._steps]
+        value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
+        return value

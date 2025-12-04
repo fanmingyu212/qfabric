@@ -30,6 +30,19 @@ def test_SineWave():
     val = amp * np.cos(2 * np.pi * f * times)
     np.testing.assert_allclose(out, val)
 
+    out = sine_func.to_dict()
+    val = {
+        "import": {"module": "qfabric.sequence.basic_functions", "name": "SineWave"},
+        "fields": {
+            "frequency": 10000000.0,
+            "amplitude": 0.1,
+            "phase": 0,
+            "start_time": None,
+            "stop_time": None,
+        },
+    }
+    assert out == val
+
 
 def test_SineSweep():
     start_f = 1.0e6

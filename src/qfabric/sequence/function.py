@@ -1,8 +1,11 @@
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+
+from qfabric._util import dynamic_import
 
 
 @dataclass
@@ -26,6 +29,24 @@ class Function:
     @abstractmethod
     def min_duration(self) -> float:
         """Minimum duration of this function."""
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Dict representation of the function without guarentee of reproduction.
+
+        This can be serialized to JSON for saving.
+        If the class definition is changed or removed, the output of this function
+        may not be reproduced after saving and loading.
+
+        Returns:
+            dict[str, Any]: dict representation of the step.
+        """
+        value = {}
+        value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
+        value["fields"] = {}
+        for field in fields(self):
+            value["fields"][field.name] = getattr(self, field.name)
+        return value
 
 
 class AnalogFunction(Function):

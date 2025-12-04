@@ -21,6 +21,26 @@ def test_Step():
         step.add_digital_function(1, DigitalPulse(1e-3, 2e-3))
     np.testing.assert_allclose(step.duration, 20e-6)
 
+    out = step.to_dict()
+    val = {
+        "name": "test",
+        "duration": 2e-05,
+        "analog_functions": {
+            0: {
+                "import": {"module": "qfabric.sequence.basic_functions", "name": "ConstantAnalog"},
+                "fields": {"amplitude": 1, "start_time": None, "stop_time": None},
+            }
+        },
+        "digital_functions": {
+            1: {
+                "import": {"module": "qfabric.sequence.basic_functions", "name": "DigitalPulse"},
+                "fields": {"start_time": 1e-05, "stop_time": 2e-05, "default_off": True},
+            }
+        },
+        "import": {"module": "qfabric.sequence.step", "name": "Step"},
+    }
+    assert out == val
+
     step_copy = Step("test_copy")
     step_copy.add_analog_function(0, ConstantAnalog(1))
     step_copy.add_digital_function(1, DigitalPulse(10e-6, 20e-6))

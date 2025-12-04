@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from qfabric.sequence.basic_functions import DigitalOn
 from qfabric.sequence.function import AnalogFunction, DigitalFunction
@@ -128,6 +129,27 @@ class Step:
                 digital_functions[channel] = function
 
         return DeviceStep(self.duration, analog_functions, digital_functions)
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Dict representation of the step, without function details.
+
+        This can be serialized to JSON for saving.
+
+        Returns:
+            dict[str, Any]: dict representation of the step.
+        """
+        value = {}
+        value["name"] = self.name
+        value["duration"] = self.duration
+        value["analog_functions"] = {}
+        for channel in self.analog_functions:
+            value["analog_functions"][channel] = self.analog_functions[channel].to_dict()
+        value["digital_functions"] = {}
+        for channel in self.digital_functions:
+            value["digital_functions"][channel] = self.digital_functions[channel].to_dict()
+        value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
+        return value
 
 
 class StartStep(Step):

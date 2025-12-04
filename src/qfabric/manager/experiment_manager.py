@@ -1,18 +1,10 @@
-import importlib
-
+from qfabric._util import dynamic_import
 from qfabric.manager.config import load_hardware_config
 from qfabric.planner.planner import Planner
 from qfabric.planner.segmenter import Segmenter
 from qfabric.programmer.device import Device
 from qfabric.programmer.programmer import Programmer
 from qfabric.sequence.sequence import Sequence
-
-
-def _dynamic_import(module_path: str, class_name: str):
-    """Import a class via module path and class name."""
-    module = importlib.import_module(module_path)
-    cls = getattr(module, class_name)
-    return cls
 
 
 class ExperimentManager:
@@ -39,12 +31,12 @@ class ExperimentManager:
         segmenters: list[Segmenter] = []
         devices: list[Device] = []
         for awg in self._config.awgs:
-            segmenter_class = _dynamic_import(awg.segmenter_module, awg.segmenter_class)
+            segmenter_class = dynamic_import(awg.segmenter_module, awg.segmenter_class)
             segmenter: Segmenter = segmenter_class(**awg.segmenter_config.model_dump())
             if self._config.digital_channel_synchronize in segmenter._digital_channels:
                 segmenter.trigger_device = True
             segmenters.append(segmenter)
-            device_class = _dynamic_import(awg.device_module, awg.device_class)
+            device_class = dynamic_import(awg.device_module, awg.device_class)
             device: Device = device_class(segmenter=segmenter, **awg.device_config.model_dump())
             devices.append(device)
         self.planner = Planner(segmenters, self._config.digital_channel_synchronize)

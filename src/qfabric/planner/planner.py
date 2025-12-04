@@ -45,6 +45,7 @@ class Planner:
         self._prepared_sequences: dict[int, list[int]] = {}
         for device_index in range(len(self._segmenters)):
             self._prepared_sequences[device_index] = []
+        self._last_sequence_run_index = None
 
         self._steps: list[Step] = []
         self._sequence_to_steps_map: dict[int, list[int]] = {}
@@ -169,23 +170,27 @@ class Planner:
 
         # gets the next scheduled sequence index.
         sequence_index = self._scheduled_sequences[0]
-        # programs the segment steps.
-        self._program_awg_memory(sequence_index)
-
-        for segmenter_index, segmenter in enumerate(self._segmenters):
-            segment_indices_and_repeats: list[tuple[int, int]] = []
-            step_repeats = [1] + self._sequences[sequence_index].get_repeats() + [1]
-            for step_order, step_repeat in enumerate(step_repeats):
-                segment_indices_and_repeats.append(
-                    (
-                        self._step_to_segment_maps[segmenter_index][
-                            self._sequence_to_steps_map[sequence_index][step_order]
-                        ],
-                        step_repeat,
-                    )
-                )
+        if sequence_index != self._last_sequence_run_index:
             # programs the segment steps.
-            self._program_segment_step_single_device(segmenter_index, segment_indices_and_repeats)
+            self._program_awg_memory(sequence_index)
+
+            for segmenter_index, segmenter in enumerate(self._segmenters):
+                segment_indices_and_repeats: list[tuple[int, int]] = []
+                step_repeats = [1] + self._sequences[sequence_index].get_repeats() + [1]
+                for step_order, step_repeat in enumerate(step_repeats):
+                    segment_indices_and_repeats.append(
+                        (
+                            self._step_to_segment_maps[segmenter_index][
+                                self._sequence_to_steps_map[sequence_index][step_order]
+                            ],
+                            step_repeat,
+                        )
+                    )
+                # programs the segment steps.
+                self._program_segment_step_single_device(
+                    segmenter_index, segment_indices_and_repeats
+                )
+        self._last_sequence_run_index = sequence_index
 
         # removes the first element of scheduled sequences.
         self._scheduled_sequences.popleft()

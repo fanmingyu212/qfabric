@@ -1,15 +1,23 @@
-name: CI
+name: Docs
 on:
   push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  check-all:
+  build-docs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.13"]
 
     steps:
       - name: Checkout
@@ -31,9 +39,22 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install nox
           python -m pip install -e .[dev]
-      - name: Tests
+      - name: Generate docs
         run: |
-          nox -s tests --no-venv -- optional-flag skip-install
-      - name: Lint
-        run: |
-          nox -s lint --no-venv -- optional-flag skip-install
+          nox -s docs --no-venv -- optional-flag skip-install
+      - name: Upload docs artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/build/html
+
+  deploy:
+    needs: build-docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

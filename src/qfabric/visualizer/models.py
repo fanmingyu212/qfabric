@@ -72,7 +72,8 @@ class FunctionBlockModel:
         func_fields = fields(self.func)
         params = {"pulse start time": self.start_time}
         for field in func_fields:
-            params[field.name] = getattr(self.func, field.name)
+            if field.compare:
+                params[field.name] = getattr(self.func, field.name)
         return params
 
     @property

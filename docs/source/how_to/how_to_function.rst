@@ -173,11 +173,69 @@ but with additional comments for clarity.
             else:
                 return np.piecewise(times, condlist, funclist)
 
+Function with non-comparison attributes
+-------------------------------------------
+
+Either ``DigitalFunction`` or ``AnalogFunction`` subclasses forbid definition of public or private attributes
+that are not dataclass fields. This ensures that all attributes that affect the function output are defined
+as fields, so function comparisons are guaranteed to be correct (the output does not change between the two functions).
+
+To write a function with non-comparison attributes, define them as ``field(compare=False)``. This is rarely needed,
+but it could be helpful in some cases (mostly for removing repeated code executions). For example, for an analog function below
+that has three constant parts of variable times:
+
+.. code-block:: python
+
+    from dataclasses import field
+
+    class FunctionWithNonComparisonAttribute(AnalogFunction):
+
+        time_1: float
+        time_2: float
+        time_3: float
+        voltage_1: float
+        voltage_2: float
+        voltage_3: float
+        # above fields are used in comparison.
+        _total_time: float = field(compare=False)
+        # this field is not used in comparison.
+        # In this case, the field can be compared: if time_1, time_2, and time_3 are the same,
+        # _total_time is also the same.
+        # However this allows implementing other attributes which change during function
+        # execution, but do not affect the function output.
+
+        def __init__(
+            self,
+            time_1: float,
+            time_2: float,
+            time_3: float,
+            voltage_1: float,
+            voltage_2: float,
+            voltage_3: float,
+        ):
+            self.time_1 = time_1
+            self.time_2 = time_2
+            self.time_3 = time_3
+            self.voltage_1 = voltage_1
+            self.voltage_2 = voltage_2
+            self.voltage_3 = voltage_3
+            self._total_time = time_1 + time_2 + time_3
+
+        @property
+        def min_duration(self) -> float:
+            # does not need to add time_1, time_2, time_3 up every time.
+            return self._total_time
+
+        ...
+
+Without a field definition, it raises an ``AttributeError`` when setting any attribute.
+
 Summary
 -----------------
 To write a new function, always check the following points:
 
 * Must inherit from ``DigitalFunction`` or ``AnalogFunction``.
-* All attributes that affect the output must be defined as fields
+* All attributes that affect the output must be defined as fields with ``compare=True`` (default).
+* All attributes that do not affect the output must be defined as fields with ``compare=False``.
 * The ``min_duration()`` and ``output()`` methods must be implemented.
-* For an analog function with phase, always forward the phase with ``time_offset``. However, do not shift the envelope in time.
+* For an analog function with phase, always forward the phase with ``time_offset``. However, do not shift the pulse envelope in time.

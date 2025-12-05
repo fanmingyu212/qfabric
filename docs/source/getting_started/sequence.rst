@@ -17,6 +17,6 @@ The duration of the step is defined by the longest function included in this ste
 To override, set :meth:`~qfabric.sequence.step.Step.duration`.
 
 AWG outputs within a :class:`~qfabric.sequence.step.Step` should have exact time and phase offsets as defined
-in the analog and digital functions. However, the time or phase relationship between different steps are not guarenteed.
+in the analog and digital functions. However, the time or phase relationship between different steps are not guaranteed.
 To satisfy AWG hardware requirements, it could be possible that a step needs to be extended (usually by a small amount).
 Therefore, the output pulses between steps may not have the same time offset as defined in the code.

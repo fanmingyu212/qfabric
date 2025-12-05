@@ -13,10 +13,43 @@ class Function:
     """
     Base class for all analog or digital functions.
 
-    All subclasses are decorated by :deco:`dataclass`. All attributes of these
+    All subclasses are automatically decorated by :deco:`dataclass`. All attributes of these
     subclasses that affect the output of the function should be defined as `field`
-    (annotated instance variables), see :attr:`AnalogSum.functions` for an example.
+    (annotated instance variables), see below for an example.
+
+    .. code-block:: python
+
+        class FunctionWithFrequency(AnalogFunction):
+            frequency: float
+
+            def __init__(self, frequency: float):
+                self.frequency = frequency
+
     Without defining these attributes as fields, the AWG memory loaded may not be correct.
+    If cache / state attributes are needed (that do not affect the output of the function),
+    these attributes can be defined as fields with `compare=False`, see below.
+
+    .. code-block:: python
+
+        from dataclasses import field
+
+        class FunctionWithTimings(DigitalFunction):
+            time_1: float
+            time_2: float
+            time_3: float
+            _total_time: float = field(compare=False)  # cache. Does not affect output.
+
+            def __init__(self, time_1: float, time_2: float, time_3: float):
+                self.time_1 = time_1
+                self.time_2 = time_2
+                self.time_3 = time_3
+                # adds times and save in a field without comparison.
+                self._total_time = time_1 + time_2 + time_3
+
+            @property
+            def min_duration(self) -> float:
+                # does not need to add up times here.
+                return self._total_time
 
     All subclasses used as actual functions should override :meth:`min_duration`.
     """
@@ -25,6 +58,27 @@ class Function:
         super().__init_subclass__(**kwargs)
         dataclass(cls)
 
+    def __setattr__(self, name: str, value: Any):
+        # Allow dataclass internals
+        if name.startswith("__"):
+            return super().__setattr__(name, value)
+
+        # During __init__, dataclass may set attributes before fields() is fully ready,
+        # so catch exceptions and just set.
+        try:
+            field_names = {f.name for f in fields(self)}
+        except TypeError:
+            return super().__setattr__(name, value)
+
+        if name not in field_names:
+            raise AttributeError(
+                f"{type(self).__name__}: '{name}' is not a declared field. "
+                "Declare it with as a field (with type annotation) if it affects the output. "
+                "Define it as a field with `compare=False` if it does not affect the output."
+            )
+
+        return super().__setattr__(name, value)
+
     @property
     @abstractmethod
     def min_duration(self) -> float:
@@ -32,7 +86,7 @@ class Function:
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Dict representation of the function without guarentee of reproduction.
+        Dict representation of the function without guarantee of reproduction.
 
         This can be serialized to JSON for saving.
         If the class definition is changed or removed, the output of this function
@@ -326,6 +380,7 @@ class DigitalSequence(DigitalFunction):
     This is useful to build longer steps containing multiple digital pulses on the same channel.
     """
 
+    default_on: bool
     functions: list[AnalogFunction]
     start_times: list[float]
     durations: list[float]

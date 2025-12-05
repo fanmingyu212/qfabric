@@ -1,3 +1,5 @@
+from dataclasses import field
+
 import numpy as np
 import pytest
 
@@ -243,6 +245,7 @@ def test_DigitalSequence_add_and_min_duration():
     val = {
         "import": {"module": "qfabric.sequence.function", "name": "DigitalSequence"},
         "fields": {
+            "default_on": False,
             "functions": [
                 {
                     "import": {
@@ -307,3 +310,47 @@ def test_DigitalSequence_errors():
     # Negative duration
     with pytest.raises(ValueError):
         seq.add_function(DigitalPulse(0, 1), duration=-1)
+
+
+def test_Function_set_public_attributes_not_fields():
+    class PublicAttributeFunction(AnalogFunction):
+        def __init__(self):
+            self.public_attribute = ""
+
+    with pytest.raises(AttributeError):
+        PublicAttributeFunction()
+
+
+def test_Function_set_private_attributes_not_fields():
+    class PrivateAttributeFunction(AnalogFunction):
+        def __init__(self):
+            self._private_attribute = ""
+
+    with pytest.raises(AttributeError):
+        PrivateAttributeFunction()
+
+
+def test_Function_set_non_comparison_fields():
+    class FunctionWithTimings(AnalogFunction):
+        time_1: float
+        time_2: float
+        time_3: float
+        _total_time: float = field(compare=False)  # cache. Does not affect output.
+
+        def __init__(self, time_1: float, time_2: float, time_3: float):
+            self.time_1 = time_1
+            self.time_2 = time_2
+            self.time_3 = time_3
+            # adds times and save in a field without comparison.
+            self._total_time = time_1 + time_2 + time_3
+
+        @property
+        def min_duration(self) -> float:
+            # does not need to add up times here.
+            return self._total_time
+
+    f = FunctionWithTimings(1, 2, 3)
+    f_1 = FunctionWithTimings(1, 2, 3)
+    f_1._total_time = 7  # only for testing
+    # this works as _total_time is defined as a non-comparison field.
+    assert f == f_1

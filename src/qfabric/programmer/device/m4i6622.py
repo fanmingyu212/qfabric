@@ -32,7 +32,7 @@ class M4i6622Device(Device):
             analog_channel_index = segmenter._digital_analog_map[digital_channel_index]
             awg_index = segmenter._analog_channels.index(analog_channel_index)
             ttl_to_awg_map[ttl_index] = awg_index
-        self._driver = M4i6622Driver(ttl_to_awg_map=ttl_to_awg_map, **kwargs)
+        self._driver = M4i6622Driver(self._resource, ttl_to_awg_map=ttl_to_awg_map, principal_card=self.is_principal_device, **kwargs)
 
         self._max_num_of_blocks: int = None
         self._max_sample_size_per_block: int = None
@@ -49,7 +49,7 @@ class M4i6622Device(Device):
             self._programmed_segments = []
             self._set_maximum_number_of_blocks(self._max_num_of_blocks)
         else:
-            self._cleanup_programmed_segments(segment)
+            self._cleanup_programmed_segments(segments)
 
         # find the block indices available to use.
         available_block_indices = set(range(self._max_num_of_blocks))
@@ -73,6 +73,7 @@ class M4i6622Device(Device):
                     new_segment_to_blocks_map[segment_index].append(block_index)
                     available_block_indices = available_block_indices[1:]
         self._segment_to_blocks_map = new_segment_to_blocks_map
+        self._programmed_segments = segments
 
     def _set_maximum_number_of_blocks(self, num_of_blocks: int):
         self._driver._set_sequence_max_segments(num_of_blocks)
@@ -91,12 +92,15 @@ class M4i6622Device(Device):
         Remove all unused segments that are already programmed.
         """
         programmed_segments: list[M4i6622Segment] = []
+        new_segment_to_blocks_map: dict[int, list[int]] = {}
+        counter = 0
         for segment_index, segment in enumerate(self._programmed_segments):
             if segment in new_segments:
                 programmed_segments.append(segment)
-            else:
-                del self._segment_to_blocks_map[segment_index]
+                new_segment_to_blocks_map[counter] = self._segment_to_blocks_map[segment_index]
+                counter += 1
         self._programmed_segments = programmed_segments
+        self._segment_to_blocks_map = new_segment_to_blocks_map
 
     def program_segment_steps(self, segment_indices_and_repeats: list[tuple[int, int]]):
         sequence_steps: list[tuple[int, int]] = []
@@ -145,15 +149,18 @@ class M4i6622Device(Device):
         for block_number, block_repeats in sequence_steps:
             if step_number == total_steps - 1:
                 end = "end_sequence"
+                next = step_number
             else:
-                edn = "end_loop"
+                end = "end_loop"
+                next = step_number + 1
             self._driver._set_segment_step_memory(
-                step_number, block_number, step_number + 1, block_repeats, end=end
+                step_number, block_number, next, block_repeats, end=end
             )
             step_number += 1
+        self._driver._write_setup()
+        self._driver._set_segment_start_step(0)
 
     def start(self):
-        self._driver._set_segment_start_step(0)
         self._driver._start()
         self._driver._enable_triggers()
 

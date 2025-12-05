@@ -712,6 +712,6 @@ class M4i6622Segmenter(Segmenter):
         awg_data = {
             "segments": segments,
             "max_segment_block_size": self.valid_max_segment_block_size,
-            "max_num_of_blocks": self.valid_max_segment_block_count,
+            "max_num_of_segment_blocks": self.valid_max_segment_block_count,
         }
         return awg_data, step_to_segment_map, sequence_indices_to_program

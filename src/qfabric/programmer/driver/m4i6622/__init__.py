@@ -38,14 +38,13 @@ class M4i6622Driver:
         self._set_sample_rate()
         self._sample_rate = self._get_sample_rate()
 
-        if principal_card:
-            self._setup_software_trigger()
-        else:
-            self._setup_external_trigger()
+        self._set_trigger_or_mask(pyspcm.SPC_TMASK_EXT0)
         self._set_trigger_and_mask(pyspcm.SPC_TMASK_NONE)
         self._set_ext0_trigger_impedance(is_50_ohm=True)
         self._set_ext0_trigger_level(level=750)
         self._set_ext0_trigger_rising_edge()
+        if principal_card:
+            self._setup_software_trigger()
 
         self._awg_channels = list(range(4))
         self._ttl_channels = list(range(3))
@@ -58,11 +57,11 @@ class M4i6622Driver:
 
         for ttl_channel in [0, 1, 2]:
             mode = pyspcm.SPCM_XMODE_DIGOUT
-
             mode = mode | getattr(pyspcm, f"SPCM_XMODE_DIGOUTSRC_CH{ttl_to_awg_map[ttl_channel]}")
-
             mode = mode | pyspcm.SPCM_XMODE_DIGOUTSRC_BIT15
             self._set_multi_purpose_io_mode(ttl_channel, mode)
+
+        self._set_mode("sequence")
 
     # device methods
     def _get_bytes_per_sample(self) -> int:

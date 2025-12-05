@@ -24,7 +24,7 @@ def lint(session):
 def docs(session):
     """Build the Sphinx HTML documentation."""
     if "skip-install" not in session.posargs:
-        session.install("-e", ".[dev]")
+        session.install("-e", ".[docs]")
     session.run(
         "sphinx-build",
         "-b",
@@ -38,7 +38,7 @@ def docs(session):
 def docs_live(session):
     """Live-reload docs while editing."""
     if "skip-install" not in session.posargs:
-        session.install("-e", ".[dev]")
+        session.install("-e", ".[docs]")
     session.run(
         "sphinx-autobuild",
         "-E",

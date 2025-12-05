@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 [project]
 name = "qfabric"
 version = "0.1.0"
-description = "AWG pulse sequence compiler, planner, and visualizer"
+description = "Pulse sequence compiler, visualizer, and experiment manager for all AWGs."
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [
@@ -29,23 +29,22 @@ dev = [
   # code style
   "black",
   "isort",
-
-  # documentation generation
+]
+docs = [
   "sphinx",
   "sphinx-autodoc-typehints",
   "furo",
   "myst-parser",
   "sphinx-copybutton",
   "sphinx-autobuild",
-  "sphinx-simplepdf",
-]
+  ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/qfabric"]
 
 [tool.black]
 line-length = 100
-target-version = ["py311", "py312", "py313", "py314"]
+target-version = ["py312", "py313", "py314"]
 
 [tool.isort]
 profile = "black"

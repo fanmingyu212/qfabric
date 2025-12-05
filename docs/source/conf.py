@@ -12,7 +12,6 @@ extensions = [
     "sphinx_autodoc_typehints",
     "myst_parser",
     "sphinx_copybutton",
-    "sphinx_simplepdf",
 ]
 autodoc_member_order = "bysource"
 autodoc_mock_imports = ["qfabric.programmer.driver.m4i6622.pyspcm"]

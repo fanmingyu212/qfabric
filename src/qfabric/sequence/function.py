@@ -56,7 +56,7 @@ class Function:
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        dataclass(cls)
+        dataclass(cls, init=False)
 
     def __setattr__(self, name: str, value: Any):
         # Allow dataclass internals

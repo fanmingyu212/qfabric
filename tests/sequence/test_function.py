@@ -354,3 +354,22 @@ def test_Function_set_non_comparison_fields():
     f_1._total_time = 7  # only for testing
     # this works as _total_time is defined as a non-comparison field.
     assert f == f_1
+
+
+def test_Function_inheritance_no_init():
+    """Tests if dataclass(init=False) is set for subclasses of Function."""
+
+    class Function1(AnalogFunction):
+        frequency: float
+
+        def __init__(self, frequency: float = 1):
+            self.frequency = frequency
+
+        @property
+        def min_duration(self) -> float:
+            return 0
+
+    class Function2(Function1): ...
+
+    f = Function2()
+    assert f.frequency == 1

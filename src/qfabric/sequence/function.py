@@ -340,24 +340,18 @@ class AnalogSequence(AnalogFunction):
     def output(
         self, times: npt.NDArray[np.float64], time_offset: float = 0
     ) -> npt.NDArray[np.float64]:
-        condlist = []
-        funclist = []
+        outputs = np.zeros(len(times), dtype=float)
         for kk in range(len(self.functions)):
             function = self.functions[kk].output
             start_time = self.start_times[kk]
             stop_time = start_time + self.durations[kk]
-            condlist.append((times >= start_time) & (times < stop_time))
+            func_mask = (times >= start_time) & (times < stop_time)
             if self.use_coherent_phases[kk]:
                 time_offset_this_pulse = time_offset + start_time
             else:
                 time_offset_this_pulse = 0
-            funclist.append(
-                lambda ts, t_start=start_time, t_offset=time_offset_this_pulse, f=function: f(
-                    ts - t_start, t_offset
-                )
-            )
-        funclist.append(0)
-        return np.piecewise(times, condlist, funclist)
+            outputs[func_mask] = function(times[func_mask] - start_time, time_offset_this_pulse)
+        return outputs
 
     def to_dict(self) -> dict[str, Any]:
         value = {}
@@ -429,16 +423,14 @@ class DigitalSequence(DigitalFunction):
         return value
 
     def output(self, times: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        condlist = []
-        funclist = []
+        outputs = np.zeros(len(times), dtype=bool)
         for kk in range(len(self.functions)):
             function = self.functions[kk].output
             start_time = self.start_times[kk]
             stop_time = start_time + self.durations[kk]
-            condlist.append((times >= start_time) & (times < stop_time))
-            funclist.append(lambda ts, t_start=start_time, f=function: f(ts - t_start))
-        funclist.append(self.default_on)
-        return np.piecewise(times, condlist, funclist).astype(bool)
+            func_mask = (times >= start_time) & (times < stop_time)
+            outputs[func_mask] = function(times[func_mask] - start_time)
+        return outputs
 
     def to_dict(self) -> dict[str, Any]:
         value = {}

@@ -53,7 +53,7 @@ jobs:
       - name: Compute docs hash
         run: |
           # excludes .doctrees. environment.pickle contains timestamps and may change with rebuild.
-          find docs/_build/html \
+          find docs/build/html \
             -type f \
             ! -path '*/.doctrees/*' \
             -print0 \

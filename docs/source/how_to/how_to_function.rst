@@ -230,6 +230,28 @@ that has three constant parts of variable times:
 
 Without a field definition, it raises an ``AttributeError`` when setting any attribute.
 
+Function inheritance
+--------------------------
+Inheritation could be useful to implement custom features. For example, if an analog output channel
+has strict requirement on the output amplitude (e.g. preventing damage of delicate components powered by it),
+we can modify the required function classes as following:
+
+.. code-block:: python
+
+    from qfabric import SineWave as _SineWave
+
+    class SineWave(_SineWave):
+        @property
+        def max_amplitude(self):
+            return self.amplitude
+
+    ...  # similarly for other required analog functions
+
+The above inherited ``SineWave`` class has a ``max_amplitude`` property defined.
+Along with an inherited :class:`~qfabric.sequence.step.Step` class reimplementing the
+:meth:`~qfabric.sequence.step.Step.add_analog_function` method, this property can be used to check
+if the maximum amplitude of the function exceeds a preset upper limit for the analog channel.
+
 Summary
 -----------------
 To write a new function, always check the following points:

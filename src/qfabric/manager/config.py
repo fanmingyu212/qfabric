@@ -40,13 +40,37 @@ class AWGConfig(BaseModel):
     device_config: DeviceConfig
 
 
+class StartStepConfig(BaseModel):
+    """
+    Config for an optional start step.
+
+    The start step is inserted at the begining of each sequence.
+    """
+
+    use: bool
+    duration: float
+    digital_channel_synchronize: int | None = None
+
+
+class StopStepConfig(BaseModel):
+    """
+    Config for an optional stop step.
+
+    The stop step is appened at the end of each sequence.
+    """
+
+    use: bool
+    duration: float
+
+
 class HardwareConfig(BaseModel):
     """
     Config for a system of AWGs.
     """
 
     version: int
-    digital_channel_synchronize: int | None
+    start_step: StartStepConfig
+    stop_step: StopStepConfig
     awgs: List[AWGConfig]
 
 
@@ -66,7 +90,8 @@ def load_hardware_config(path: str) -> HardwareConfig:
     config = raw.get("config", {})
     data = {
         "version": config.get("version"),
-        "digital_channel_synchronize": config.get("digital_channel_synchronize", None),
+        "start_step": raw.get("start_step"),
+        "stop_step": raw.get("stop_step"),
         "awgs": raw.get("awgs", []),
     }
 
@@ -79,6 +104,6 @@ def load_hardware_config(path: str) -> HardwareConfig:
         raise ValueError("Analog channels defined in the config file have duplicates.")
     if len(digital_channels_defined) != len(set(digital_channels_defined)):
         raise ValueError("Digital channels defined in the config file have duplicates.")
-    if data["digital_channel_synchronize"] not in digital_channels_defined:
+    if data["start_step"]["digital_channel_synchronize"] not in digital_channels_defined:
         raise ValueError("Synchronization digital channel is not in the digital channels defined.")
     return HardwareConfig.model_validate(data)

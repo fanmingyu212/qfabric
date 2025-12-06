@@ -13,9 +13,8 @@ class Planner:
     Args:
         segmenters (list[Segmenter]):
             List of AWG segmenters. Each device corresponds to a segmenter.
-        digital_channel_synchronize (int):
-            Digital channel used to trigger other devices at the start of the sequence.
-            If None, no trigger is used.
+        start_step (dict[str, Any]): Start step config.
+        stop_step (dict[str, Any]): Stop step config.
 
     Attributes:
         _sequences (dict[int, Sequence]):
@@ -35,9 +34,12 @@ class Planner:
             sent to the AWG programmer device.
     """
 
-    def __init__(self, segmenters: list[Segmenter], digital_channel_synchronize: int):
+    def __init__(
+        self, segmenters: list[Segmenter], start_step: dict[str, Any], stop_step: dict[str, Any]
+    ):
         self._segmenters = segmenters
-        self.digital_channel_synchronize = digital_channel_synchronize
+        self._start_step = start_step
+        self._stop_step = stop_step
 
         self._sequence_counter = 0
         self._sequences: dict[int, Sequence] = {}
@@ -140,12 +142,19 @@ class Planner:
         dedup_steps: list[Step] = []
         dedup_step_map: dict[int, list[int]] = {}
         dedup_sequence_indices: list[int] = list(dict.fromkeys(self._scheduled_sequences))
-        start_step = StartStep(self.digital_channel_synchronize)
-        stop_step = StopStep()
+        start_step = StartStep(
+            self._start_step["duration"], self._start_step["digital_channel_synchronize"]
+        )
+        stop_step = StopStep(self._stop_step["duration"])
         for sequence_index in dedup_sequence_indices:
             sequence = self._sequences[sequence_index]
             dedup_step_map[sequence_index] = []
-            for step in [start_step] + sequence.get_steps() + [stop_step]:
+            steps: list[Step] = sequence.get_steps()
+            if self._start_step["use"]:
+                steps = [start_step] + steps
+            if self._stop_step["use"]:
+                steps = steps + [stop_step]
+            for step in steps:
                 try:
                     step_index = dedup_steps.index(step)
                 except ValueError:
@@ -174,9 +183,13 @@ class Planner:
             # programs the segment steps.
             self._program_awg_memory(sequence_index)
 
-            for segmenter_index, segmenter in enumerate(self._segmenters):
+            for segmenter_index in range(len(self._segmenters)):
                 segment_indices_and_repeats: list[tuple[int, int]] = []
-                step_repeats = [1] + self._sequences[sequence_index].get_repeats() + [1]
+                step_repeats: list[int] = self._sequences[sequence_index].get_repeats()
+                if self._start_step["use"]:
+                    step_repeats = [1] + step_repeats
+                if self._stop_step["use"]:
+                    step_repeats = step_repeats + [1]
                 for step_order, step_repeat in enumerate(step_repeats):
                     segment_indices_and_repeats.append(
                         (

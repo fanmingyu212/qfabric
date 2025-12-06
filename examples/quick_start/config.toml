@@ -1,6 +1,14 @@
 [config]
 version = 1
+
+[start_step]
+use = true
+duration = 10e-6
 digital_channel_synchronize = 0  # comment out if no digital channel is used for synchronization
+
+[stop_step]
+use = true
+duration = 10e-6
 
 [[awgs]]
 name = "mock_1"

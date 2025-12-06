@@ -67,14 +67,14 @@ def test_Step():
 
 
 def test_StartStep():
-    start = StartStep()
+    start = StartStep(duration=10e-6)
     np.testing.assert_allclose(start.duration, 10e-6)
     assert len(start.analog_functions) == 0
     assert len(start.digital_functions) == 1
 
 
 def test_StopStep():
-    stop = StopStep()
+    stop = StopStep(duration=10e-6)
     np.testing.assert_allclose(stop.duration, 10e-6)
     assert len(stop.analog_functions) == 0
     assert len(stop.digital_functions) == 0

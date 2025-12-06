@@ -321,7 +321,7 @@ def test_M4i6622Segmenter():
     sequence_to_steps_map: dict[int, list[int]] = {}
     for sequence_index in range(len(sequences)):
         sequence = sequences[sequence_index]
-        steps = [StartStep()] + sequence.get_steps() + [StopStep()]
+        steps = [StartStep(10e-6)] + sequence.get_steps() + [StopStep(10e-6)]
         sequence_to_steps_map[sequence_index] = []
         for step_index in range(len(steps)):
             step = steps[step_index]
@@ -371,7 +371,7 @@ def test_M4i6622Segmenter():
                 out_num_of_samples += num_of_samples * segment_block_repeat * repeats[step_order]
         val_num_of_samples = 0
         sequence = sequences[sequence_index]
-        steps = [StartStep()] + sequence.get_steps() + [StopStep()]
+        steps = [StartStep(10e-6)] + sequence.get_steps() + [StopStep(10e-6)]
         repeats = [1] + sequence.get_repeats() + [1]
         for kk in range(len(steps)):
             val_num_of_samples += (

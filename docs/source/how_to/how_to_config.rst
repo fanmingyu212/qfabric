@@ -19,21 +19,41 @@ In ``example_config.toml``, add the following lines.
 
    [config]
    version = 1
-   digital_channel_synchronize = 0
 
-The first line under ``[config]`` specify the version of the config. The latest config version is 1.
-The second line defines the digital channel used for outputting a trigger signal at the start of the
-sequence to synchronize other AWG devices. This trigger pulse is 10 us long.
-If this line is deleted or commented, no digital channel is automatically turned on at the start
-of the sequence.
+This specify the version of the config. The latest config version is 1.
 
 Config version history
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 v1: The first config version.
 
+Add start and stop step information
+---------------------------------------
+Then we want to add information about the start step and the stop step.
+The start and stop steps are optional. They are inserted to the start and end of each sequence.
+They are useful for cases where a digital channel is needed to synchronize other AWG devices.
+Certain AWG devices may not run the last step in a sequence. In this case, the stop step
+is an empty step that do not change the output if not run.
+
+.. code-block:: toml
+
+   [start_step]
+   use = true
+   duration = 10e-6
+   digital_channel_synchronize = 0  # comment out if no digital channel is used for synchronization
+
+   [stop_step]
+   use = true
+   duration = 10e-6
+
+Set ``use`` to ``true`` or ``false`` to turn the start or stop steps on or off.
+Set ``duration`` to the desired duration of the step.
+The ``digital_channel_synchronize`` setting defines the digital channel used set to high
+during the start step to synchronize other AWG devices.
+If this line is deleted or commented, no digital channel is automatically turned on during the start step.
+
 Add an AWG device
 ----------------------------
-After specifying the config verion, We want to define an AWG device controlled by qFabric.
+After that, We want to define an AWG device controlled by qFabric.
 We assume that the first device is a Spectrum Instruments m4i.6622 AWG device.
 qFabric has built-in support of this device.
 
@@ -82,7 +102,7 @@ Then we define the arguments for the device (:class:`~qfabric.programmer.device.
 
    # the following lines needs to be indented.
      [awgs.device_config]
-     resource = "/dev/spcm1"
+     resource = "/dev/spcm0"
      external_clock_frequency = 10000000
 
 Again, all required parameters of the device class must be defined here
@@ -113,13 +133,11 @@ To control more than one AWG devices, we can add another entry in the ``awg`` ar
      analog_channels_to_store_digital_data = [5, 6, 7]
 
      [awgs.device_config]
-     resource = "/dev/spcm2"
+     resource = "/dev/spcm1"
      external_clock_frequency = 10000000
 
 Note that the ``analog_channels`` or ``digital_channels`` defined by multple AWG devices
 cannot contain the same indices.
-
-See ``qfabric/manager/example_config.toml`` for the complete config file.
 
 Use the config file
 ----------------------------

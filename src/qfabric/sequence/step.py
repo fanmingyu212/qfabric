@@ -157,9 +157,9 @@ class StartStep(Step):
     Pulse sequence start step.
     """
 
-    def __init__(self, digital_channel_on: int = 0):
+    def __init__(self, duration: float, digital_channel_on: int = 0):
         super().__init__("__start__")
-        self.duration = 10e-6
+        self.duration = duration
         if digital_channel_on is not None:
             self.add_digital_function(digital_channel_on, DigitalOn())
 
@@ -169,9 +169,9 @@ class StopStep(Step):
     Pulse sequence stop step.
     """
 
-    def __init__(self):
+    def __init__(self, duration: float):
         super().__init__("__stop__")
-        self.duration = 10e-6
+        self.duration = duration
 
 
 class EmptyStep(Step):

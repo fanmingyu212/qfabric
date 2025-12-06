@@ -83,10 +83,40 @@ class Sequence:
         This can be serialized to JSON for saving.
 
         Returns:
-            dict[str, Any]: dict representation of the sequence.
+            dict[str, Any]: Dict representation of the sequence.
         """
         value = {}
         value["repeats"] = self._repeats
         value["steps"] = [step.to_dict() for step in self._steps]
         value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
         return value
+
+    @classmethod
+    def from_dict(cls, dict_value: dict[str, Any]):
+        """
+        Uses :class:`SequenceVisualizeOnly` to build a visualization only sequence.
+
+        Args:
+            dict_value (dict[str, Any]): Dict representation of the sequence.
+        """
+        return SequenceVisualizeOnly.from_dict(dict_value)
+
+
+class SequenceVisualizeOnly(Sequence):
+    """
+    Sequence subclass that is only for visualization.
+
+    This class is for building a sequence back from a dictionary.
+    It may not contain the same dynamic code as the actual sequence.
+    For example, if the function definition changes or the import path changes,
+    the output may change.
+    Therefore it is only for pulse sequence visualization.
+    """
+
+    @classmethod
+    def from_dict(cls, dict_value: dict[str, Any]):
+        sequence = cls()
+        sequence._repeats = dict_value["repeats"]
+        for step_dict in dict_value["steps"]:
+            sequence._steps.append(Step.from_dict(step_dict))
+        return sequence

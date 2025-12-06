@@ -151,6 +151,36 @@ class Step:
         value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
         return value
 
+    @classmethod
+    def from_dict(cls, dict_value: dict[str, Any]):
+        """
+        Uses :class:`StepVisualizeOnly` to build a visualization only step.
+
+        Args:
+            dict_value (dict[str, Any]): Dict representation of the step.
+        """
+        return StepVisualizeOnly.from_dict(dict_value)
+
+
+class StepVisualizeOnly(Step):
+    """
+    Step subclass that is only for visualization.
+    """
+
+    @classmethod
+    def from_dict(cls, dict_value: dict[str, Any]):
+        step = cls(dict_value["name"])
+        for channel in dict_value["analog_functions"]:
+            step.analog_functions[channel] = AnalogFunction.from_dict(
+                dict_value["analog_functions"][channel]
+            )
+        for channel in dict_value["digital_functions"]:
+            step.digital_functions[channel] = DigitalFunction.from_dict(
+                dict_value["digital_functions"][channel]
+            )
+        step.duration = dict_value["duration"]
+        return step
+
 
 class StartStep(Step):
     """

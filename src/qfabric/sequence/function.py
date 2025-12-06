@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, make_dataclass
 from typing import Any
 
 import numpy as np
@@ -99,7 +99,8 @@ class Function:
         value["import"] = {"module": type(self).__module__, "name": type(self).__name__}
         value["fields"] = {}
         for field in fields(self):
-            value["fields"][field.name] = getattr(self, field.name)
+            if field.compare:
+                value["fields"][field.name] = getattr(self, field.name)
         return value
 
 
@@ -128,6 +129,39 @@ class AnalogFunction(Function):
         Returns:
             npt.NDArray[np.float64]: output.
         """
+
+    @classmethod
+    def from_dict(cls, dict_value: dict[str, Any]):
+        """
+        Uses :class:`AnalogFunctionVisualizeOnly` to build a visualization only function.
+
+        Args:
+            dict_value (dict[str, Any]): Dict representation of the function.
+        """
+        return AnalogFunctionVisualizeOnly.from_dict(dict_value)
+
+
+class AnalogFunctionVisualizeOnly(AnalogFunction):
+    """
+    AnalogFunction subclass that is only for visualization.
+    """
+
+    @classmethod
+    def from_dict(cls, dict_value: dict[str, Any]) -> "AnalogFunctionVisualizeOnly":
+        fields = []
+        default_values = {}
+        for name in dict_value["fields"]:
+            fields.append((name, type(dict_value["fields"][name])))
+            default_values[name] = dict_value["fields"][name]
+        new_cls = make_dataclass(
+            dict_value["import"]["name"], fields=fields, bases=(cls,), module="<dynamic>"
+        )
+        function = new_cls(**default_values)
+        return function
+
+    @property
+    def min_duration(self) -> float:
+        return 0
 
 
 class AnalogEmpty(AnalogFunction):
@@ -163,6 +197,39 @@ class DigitalFunction(Function):
         Returns:
             npt.NDArray[np.bool]: output.
         """
+
+    @classmethod
+    def from_dict(cls, dict_value: dict[str, Any]):
+        """
+        Uses :class:`DigitalFunctionVisualizeOnly` to build a visualization only function.
+
+        Args:
+            dict_value (dict[str, Any]): Dict representation of the function.
+        """
+        return DigitalFunctionVisualizeOnly.from_dict(dict_value)
+
+
+class DigitalFunctionVisualizeOnly(DigitalFunction):
+    """
+    DigitalFunction subclass that is only for visualization.
+    """
+
+    @classmethod
+    def from_dict(cls, dict_value: dict[str, Any]) -> "DigitalFunctionVisualizeOnly":
+        fields = []
+        default_values = {}
+        for name in dict_value["fields"]:
+            fields.append((name, type(dict_value["fields"][name])))
+            default_values[name] = dict_value["fields"][name]
+        new_cls = make_dataclass(
+            dict_value["import"]["name"], fields=fields, bases=(cls,), module="<dynamic>"
+        )
+        function = new_cls(**default_values)
+        return function
+
+    @property
+    def min_duration(self) -> float:
+        return 0
 
 
 class DigitalEmpty(DigitalFunction):

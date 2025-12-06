@@ -18,6 +18,8 @@ jobs:
   build-docs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      docs_changed: ${{ steps.changed.outputs.docs_changed }}
 
     steps:
       - name: Checkout
@@ -26,10 +28,11 @@ jobs:
           fetch-depth: 0
           filter: blob:none
           persist-credentials: true
-      - name: Set up Python ${{ matrix.python-version }}
+
+      - name: Set up Python 3.13
         uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.13"
       - name: Create and activate virtual environment
         run: |
           python -m venv .venv
@@ -39,9 +42,55 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install nox
           python -m pip install -e .[docs]
+
       - name: Generate docs
         run: |
           nox -s docs --no-venv -- optional-flag skip-install
+
+      - name: Compute docs hash
+        run: |
+          # excludes .doctrees. environment.pickle contains timestamps and may change with rebuild.
+          find docs/_build/html \
+            -type f \
+            ! -path '*/.doctrees/*' \
+            -print0 \
+          | sort -z \
+          | xargs -0 sha256sum > docs_hash.txt
+      - name: Download previous docs hash
+        id: download-old-hash
+        uses: dawidd6/action-download-artifact@v11
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: docs.yaml
+          name: docs-hash
+          path: old-hash
+          workflow_conclusion: success
+          if_no_artifact_found: ignore
+      - name: Compare docs hash
+        id: changed
+        run: |
+          # default: assume changed if we can't compare
+          changed=true
+
+          if [ -f old-hash/docs_hash.txt ]; then
+            if cmp -s docs_hash.txt old-hash/docs_hash.txt; then
+              echo "Docs hash is identical to previous run."
+              changed=false
+            else
+              echo "Docs hash differs from previous run."
+            fi
+          else
+            echo "No previous docs_hash.txt found (first run or no artifact)."
+          fi
+
+          echo "docs_changed=$changed" >> "$GITHUB_OUTPUT"
+      - name: Upload docs hash artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: docs-hash
+          path: docs_hash.txt
+          retention-days: 30
+
       - name: Upload docs artifact
         uses: actions/upload-pages-artifact@v4
         with:
@@ -49,6 +98,7 @@ jobs:
 
   deploy:
     needs: build-docs
+    if: needs.build-docs.outputs.docs_changed == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

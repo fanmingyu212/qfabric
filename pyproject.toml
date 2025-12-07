@@ -44,7 +44,7 @@ packages = ["src/qfabric"]
 
 [tool.black]
 line-length = 100
-target-version = ["py312", "py313", "py314"]
+target-version = ["py312", "py313"]
 
 [tool.isort]
 profile = "black"

@@ -245,7 +245,7 @@ def logic_sequence(
     def make_doc(doc):
         sequence_model = SequenceModel(sequence, analog_map=analog_map, digital_map=digital_map)
         plot, source, spin, text = _get_sequence_figure(sequence_model, logic=True)
-        doc.add_root(column(spin, plot, text))
+        doc.add_root(column(spin, plot, text, margin=(10, 0, 0, 30)))
 
     apps = {"/": make_doc}
     _start_server(apps)
@@ -274,7 +274,7 @@ def timeline_sequence(
     def make_doc(doc):
         sequence_model = SequenceModel(sequence, analog_map=analog_map, digital_map=digital_map)
         plot, source, spin, text = _get_sequence_figure(sequence_model, logic=False)
-        doc.add_root(column(spin, plot, text))
+        doc.add_root(column(spin, plot, text, margin=(10, 0, 0, 30)))
 
     apps = {"/": make_doc}
     _start_server(apps)

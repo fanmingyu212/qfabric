@@ -14,7 +14,7 @@ extensions = [
     "sphinx_copybutton",
 ]
 autodoc_member_order = "bysource"
-autodoc_mock_imports = ["qfabric.programmer.driver.m4i6622.pyspcm"]
+autodoc_mock_imports = ["qfabric.programmer.driver.m4i6622.pyspcm", "telnetlib3"]
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 

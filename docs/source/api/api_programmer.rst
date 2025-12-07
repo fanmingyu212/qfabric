@@ -13,9 +13,21 @@ device
    :members:
    :show-inheritance:
 
+device.virtual
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: qfabric.programmer.device.virtual
+   :members:
+   :show-inheritance:
+
 device.m4i6622
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: qfabric.programmer.device.m4i6622
+   :members:
+   :show-inheritance:
+
+device.awg710
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: qfabric.programmer.device.awg710
    :members:
    :show-inheritance:
 

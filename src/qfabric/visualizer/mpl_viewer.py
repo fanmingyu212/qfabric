@@ -3,6 +3,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.widgets import SpanSelector
 
 from qfabric.visualizer.power_spectrum import PowerSpectrum
 
@@ -29,12 +30,41 @@ ax.set_xlabel("time (s)")
 ax.set_ylabel(channel_name)
 
 if is_analog:
-    ps = PowerSpectrum(ydata, 1 / sample_rate)
     ax = axs[1]
-    ax.plot(ps.f, ps.power_spectrum)
-    ax.set_xlabel("frequency (Hz)")
-    ax.set_ylabel("Power spectrum (V$^2$ / Hz)")
+    ax.text(
+        0.05,
+        0.95,
+        "Drag to select a range in the above panel\nto view its power spectrum.",
+        fontsize=12,
+        transform=ax.transAxes,
+        verticalalignment="top",
+        horizontalalignment="left",
+    )
+
+
+def on_span_select(xmin: float, xmax: float):
+    ax = axs[1]
+    ax.cla()
+    mask = (xdata >= xmin) & (xdata < xmax)
+    if sum(mask) == 0:
+        return
+    ps = PowerSpectrum(ydata[mask], 1 / sample_rate)
+    ax.plot(ps.f, ps.power_spectrum, color="orange")
     ax.set_yscale("log")
+    ax.set_xlabel("frequency (Hz)")
+    ax.set_ylabel("power spectrum (V$^2$ / Hz)")
+    plt.draw()
+
+
+if is_analog:
+    span = SpanSelector(
+        axs[0],
+        on_span_select,
+        "horizontal",
+        useblit=True,
+        props=dict(alpha=0.3, facecolor="tab:orange"),
+        interactive=True,
+    )
 
 plt.tight_layout()
 try:

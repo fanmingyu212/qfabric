@@ -2,9 +2,8 @@ from dataclasses import dataclass, fields
 from typing import Any
 
 import numpy as np
-import numpy.typing as npt
 
-from qfabric.sequence.function import AnalogFunction, DigitalFunction, Function
+from qfabric.sequence.function import Function
 from qfabric.sequence.sequence import Sequence
 from qfabric.sequence.step import Step
 
@@ -42,30 +41,14 @@ def _value_to_str_with_prefix(value: float) -> str:
 @dataclass
 class FunctionBlockModel:
     func: Function
+    is_analog: bool
+    channel_index: int
     x_index: int
     y_index: int
     y_label: str
     start_time: float
     duration: float
     repeat: int
-
-    def __init__(
-        self,
-        function: Function,
-        x_index: int,
-        y_index: int,
-        y_label: str,
-        start_time: float,
-        duration: float,
-        repeat: int,
-    ):
-        self.func = function
-        self.x_index = x_index
-        self.y_index = y_index
-        self.y_label = y_label
-        self.start_time = start_time
-        self.duration = duration
-        self.repeat = repeat
 
     @property
     def parameters(self) -> dict[str, Any]:
@@ -85,30 +68,8 @@ class FunctionBlockModel:
         description = ""
         for name in self.parameters:
             value = self.parameters[name]
-            description += f"{name} = {_value_to_str_with_prefix(value)}<br>"
+            description += f"{name} = {_value_to_str_with_prefix(value)}\n"
         return description
-
-
-@dataclass
-class AnalogFunctionBlockModel(FunctionBlockModel):
-    func: AnalogFunction
-    x_index: int
-    y_index: int
-    y_label: str
-    start_time: float
-    duration: float
-    repeat: int
-
-
-@dataclass
-class DigitalFunctionBlockModel(FunctionBlockModel):
-    func: DigitalFunction
-    x_index: int
-    y_index: int
-    y_label: str
-    start_time: float
-    duration: float
-    repeat: int
 
 
 @dataclass
@@ -118,8 +79,8 @@ class StepModel:
     start_time: float
     duration: float
     repeat: int
-    analog_functions: dict[int, AnalogFunctionBlockModel]
-    digital_functions: dict[int, DigitalFunctionBlockModel]
+    analog_functions: dict[int, FunctionBlockModel]
+    digital_functions: dict[int, FunctionBlockModel]
 
     def __init__(
         self,
@@ -129,6 +90,7 @@ class StepModel:
         repeat: int,
         analog_chs: list[int],
         digital_chs: list[int],
+        channel_names: list[str],
     ):
         self.name = step.name
         self.index = index
@@ -139,9 +101,11 @@ class StepModel:
         self.analog_functions = {}
         for analog_ch, analog_function in step.analog_functions.items():
             y_index = -analog_chs.index(analog_ch)
-            y_label = f"Analog CH{analog_ch}"
-            self.analog_functions[analog_ch] = AnalogFunctionBlockModel(
+            y_label = channel_names[-y_index]
+            self.analog_functions[analog_ch] = FunctionBlockModel(
                 analog_function,
+                True,
+                analog_ch,
                 self.index,
                 y_index,
                 y_label,
@@ -153,9 +117,11 @@ class StepModel:
         self.digital_functions = {}
         for digital_ch, digital_function in step.digital_functions.items():
             y_index = -digital_chs.index(digital_ch) - len(analog_chs)
-            y_label = f"Digital CH{digital_ch}"
-            self.digital_functions[digital_ch] = DigitalFunctionBlockModel(
+            y_label = channel_names[-y_index]
+            self.digital_functions[digital_ch] = FunctionBlockModel(
                 digital_function,
+                False,
+                digital_ch,
                 self.index,
                 y_index,
                 y_label,
@@ -169,8 +135,10 @@ class StepModel:
 class SequenceModel:
     steps: list[StepModel]
     channel_names: list[str]
+    analog_map: dict[int, str]
+    digital_map: dict[int, str]
 
-    def __init__(self, sequence: Sequence):
+    def __init__(self, sequence: Sequence, analog_map: dict[int, str], digital_map: dict[int, str]):
         steps = sequence.get_steps()
         repeats = sequence.get_repeats()
 
@@ -181,17 +149,33 @@ class SequenceModel:
             digital_chs = digital_chs | set(step.digital_functions)
         analog_chs = sorted(list(analog_chs))
         digital_chs = sorted(list(digital_chs))
+
         self.channel_names: list[str] = []
         for analog_ch in analog_chs:
-            self.channel_names.append(f"Analog CH{analog_ch}")
+            if analog_ch in analog_map:
+                self.channel_names.append(analog_map[analog_ch])
+            else:
+                self.channel_names.append(f"Analog CH{analog_ch}")
+
         for digital_ch in digital_chs:
-            self.channel_names.append(f"Digital CH{digital_ch}")
+            if digital_ch in digital_map:
+                self.channel_names.append(digital_map[digital_ch])
+            else:
+                self.channel_names.append(f"Digital CH{digital_ch}")
 
         self.steps: list[StepModel] = []
         start_time = 0
         for index in range(len(steps)):
             self.steps.append(
-                StepModel(steps[index], index, start_time, repeats[index], analog_chs, digital_chs)
+                StepModel(
+                    steps[index],
+                    index,
+                    start_time,
+                    repeats[index],
+                    analog_chs,
+                    digital_chs,
+                    self.channel_names,
+                )
             )
             start_time += steps[index].duration * repeats[index]
 

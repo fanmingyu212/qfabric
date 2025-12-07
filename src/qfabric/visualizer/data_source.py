@@ -22,6 +22,8 @@ def color_cycle(index: int) -> str:
 def get_sequence_plot_data_source(sequence_model: SequenceModel) -> ColumnDataSource:
     data = {}
     data["x_index"] = []
+    data["is_analog"] = []
+    data["channel_index"] = []
     data["center_time_ms"] = []
     data["y_index"] = []
     data["y_label"] = []
@@ -34,6 +36,8 @@ def get_sequence_plot_data_source(sequence_model: SequenceModel) -> ColumnDataSo
     for function_block in sequence_model.functions:
         total_duration = function_block.duration * function_block.repeat
         data["x_index"].append(function_block.x_index)
+        data["is_analog"].append(function_block.is_analog)
+        data["channel_index"].append(function_block.channel_index)
         data["center_time_ms"].append((function_block.start_time + total_duration / 2) * 1e3)
         data["y_index"].append(function_block.y_index)
         data["y_label"].append(function_block.y_label)

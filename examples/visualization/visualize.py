@@ -28,7 +28,11 @@ step.add_analog_function(2, LinearRamp(-1, 1, 0, 1e-5))
 step.add_digital_function(1, DigitalPulse(5e-6, 1e-5))
 sequence.add_step(step, repeats=10)
 
+# optional channel labels
+analog_channels = {0: "AOM", 1: "EOM", 2: "laser mod"}
+digital_channels = {0: "trigger_1", 1: "trigger_2"}
+
 if plot_logic:
-    logic_sequence(sequence)
+    logic_sequence(sequence, analog_map=analog_channels, digital_map=digital_channels)
 else:
-    timeline_sequence(sequence)
+    timeline_sequence(sequence, analog_map=analog_channels, digital_map=digital_channels)

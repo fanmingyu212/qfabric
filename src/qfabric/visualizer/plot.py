@@ -2,14 +2,24 @@ import os
 import pickle
 import subprocess
 import sys
+import warnings
 from functools import partial
+
+from bokeh.core.serialization import BokehUserWarning
+
+warnings.filterwarnings("ignore", category=BokehUserWarning)
+
 
 import numpy as np
 from bokeh.layouts import column
-from bokeh.models import ColumnDataSource, HoverTool, NumericInput, Range1d, TapTool
+from bokeh.models import ColumnDataSource, Div, Label, NumericInput, Range1d, TapTool
 from bokeh.plotting import figure
 from bokeh.server.server import Server
 
+from qfabric.sequence.function import (
+    AnalogFunctionVisualizeOnly,
+    DigitalFunctionVisualizeOnly,
+)
 from qfabric.sequence.sequence import Sequence
 from qfabric.visualizer.data_source import get_sequence_plot_data_source
 from qfabric.visualizer.models import SequenceModel
@@ -37,7 +47,13 @@ def _get_sequence_figure(sequence_model: SequenceModel, logic: bool):
     width = len(step_labels) * 180
     height = len(ch_labels) * 80
     spin = NumericInput(value=625, low=1e-3, high=10000, mode="float", title="Sample rate (MHz)")
-    plot = figure(tools=sequence_plot_tools, y_range=ch_labels, width=width, height=height)
+    plot = figure(
+        tools=sequence_plot_tools,
+        y_range=ch_labels,
+        width=width,
+        height=height,
+        output_backend="svg",
+    )
 
     source = get_sequence_plot_data_source(sequence_model)
 
@@ -64,16 +80,6 @@ def _get_sequence_figure(sequence_model: SequenceModel, logic: bool):
         plot.xaxis.axis_label = "Time (ms)"
 
     rectangles.nonselection_glyph.fill_alpha = 0.5
-    tooltips = """
-    <div>
-        <span style="font-size: 12px;"><b>@name</b><br></span>
-        <span style="font-size: 12px;"><i>Parameters:</i><br></span>
-        <span style="font-size: 12px;">@tooltip{safe}</span>
-    </div>
-    """
-
-    hover_tool = HoverTool(tooltips=tooltips)
-    plot.add_tools(hover_tool)
 
     plot.xaxis.axis_label_text_font_size = "14px"
     plot.xaxis.major_label_text_font_size = "14px"
@@ -87,13 +93,49 @@ def _get_sequence_figure(sequence_model: SequenceModel, logic: bool):
     plot.add_tools(taptool)
     plot.toolbar.active_tap = taptool
 
+    notes = Label(
+        x=10,
+        y=10,
+        x_units="screen",
+        y_units="screen",
+        text="",
+        text_color="#5A3E00",
+        background_fill_color="#FFF4CC",
+        border_line_color="#FFB400",
+        text_font_size="14px",
+        border_line_width=2,
+        background_fill_alpha=0.95,
+    )
+    plot.add_layout(notes)
+
+    text = Div()
+
     mpl_parameters = _MPLParameters(sequence_model, source, spin)
-    source.selected.on_change("indices", partial(_open_new_plot_mpl, mpl_parameters))
+    source.selected.on_change("indices", partial(_open_new_plot_mpl, mpl_parameters, notes, text))
+    return (plot, source, spin, text)
 
-    return (plot, source, spin)
+
+def _tooltip_to_table_html(tooltip_raw: str) -> str:
+    lines = [l.strip() for l in tooltip_raw.splitlines() if l.strip()]
+    rows = []
+
+    for line in lines:
+        if "=" in line:
+            key, val = [p.strip() for p in line.split("=", 1)]
+            rows.append(
+                "<tr>"
+                f'<td style="padding-right:6px;white-space:nowrap;">{key}</td>'
+                f"<td>= {val}</td>"
+                "</tr>"
+            )
+        else:
+            # fallback for lines without '='
+            rows.append("<tr>" f'<td colspan="2" style="white-space:nowrap;">{line}</td>' "</tr>")
+
+    return "".join(rows)
 
 
-def _open_new_plot_mpl(parameters: _MPLParameters, attr, old, new):
+def _open_new_plot_mpl(parameters: _MPLParameters, notes: Label, text: Div, attr, old, new):
     """
     Opens plot showing function details in matplotlib.
 
@@ -101,6 +143,7 @@ def _open_new_plot_mpl(parameters: _MPLParameters, attr, old, new):
     Matplotlib is opened in a new process so it can run its own event loop
     to enable interactive features.
     """
+    notes.text = ""
     model = parameters.model
     source = parameters.source
     if parameters.process is not None:
@@ -111,17 +154,42 @@ def _open_new_plot_mpl(parameters: _MPLParameters, attr, old, new):
     if len(inds) == 0:
         return
 
+    DETAILS_TEMPLATE = (
+        '<div style="font-family:system-ui,sans-serif;'
+        '            font-size:13px;line-height:1.35;margin:0;">'
+        '<div style="border:1px solid #ddd;border-radius:6px;'
+        '            padding:10px 12px;background:#fafafa;">'
+        '<div style="font-size:15px;font-weight:600;color:#222;'
+        '             margin:0 0 4px 0;">{name}</div>'
+        '<div style="font-style:italic;color:#555;margin:0 0 4px 0;">'
+        "        Parameters:</div>"
+        '<table style="border-collapse:collapse;margin-left:4px;">'
+        "{rows_html}"
+        "</table>"
+        "</div>"
+        "</div>"
+    )
+    name = source.data["name"][inds[0]]
+    rows_html = _tooltip_to_table_html(source.data["tooltip"][inds[0]])
+
+    text.text = DETAILS_TEMPLATE.format(name=name, rows_html=rows_html)
+
     step_index = source.data["x_index"][inds[0]]
     channel_name = source.data["y_label"][inds[0]]
     step = model.steps[step_index]
-    if channel_name.startswith("Analog"):
-        channel_index = int(channel_name[9:])
+    channel_index = source.data["channel_index"][inds[0]]
+    if source.data["is_analog"][inds[0]]:
         function = step.analog_functions[channel_index].func
         is_analog = True
+        if isinstance(function, AnalogFunctionVisualizeOnly):
+            notes.text = " Cannot view details of functions built using `from_dict`. "
+            return
     else:
-        channel_index = int(channel_name[10:])
         function = step.digital_functions[channel_index].func
         is_analog = False
+        if isinstance(function, DigitalFunctionVisualizeOnly):
+            notes.text = " Cannot view details of functions built using `from_dict`. "
+            return
 
     data = {
         "function": function,
@@ -154,7 +222,9 @@ def _start_server(apps):
         pass
 
 
-def logic_sequence(sequence: Sequence):
+def logic_sequence(
+    sequence: Sequence, analog_map: dict[int, str] = None, digital_map: dict[int, str] = None
+):
     """
     Displays the sequence in the logic mode.
 
@@ -167,17 +237,23 @@ def logic_sequence(sequence: Sequence):
     Args:
         sequence (Sequence): sequence to be displayed.
     """
+    if analog_map is None:
+        analog_map = {}
+    if digital_map is None:
+        digital_map = {}
 
     def make_doc(doc):
-        sequence_model = SequenceModel(sequence)
-        plot, source, spin = _get_sequence_figure(sequence_model, logic=True)
-        doc.add_root(column(spin, plot))
+        sequence_model = SequenceModel(sequence, analog_map=analog_map, digital_map=digital_map)
+        plot, source, spin, text = _get_sequence_figure(sequence_model, logic=True)
+        doc.add_root(column(spin, plot, text))
 
     apps = {"/": make_doc}
     _start_server(apps)
 
 
-def timeline_sequence(sequence: Sequence):
+def timeline_sequence(
+    sequence: Sequence, analog_map: dict[int, str] = None, digital_map: dict[int, str] = None
+):
     """
     Displays the sequence in the timeline mode.
 
@@ -190,11 +266,15 @@ def timeline_sequence(sequence: Sequence):
     Args:
         sequence (Sequence): sequence to be displayed.
     """
+    if analog_map is None:
+        analog_map = {}
+    if digital_map is None:
+        digital_map = {}
 
     def make_doc(doc):
-        sequence_model = SequenceModel(sequence)
-        plot, source, spin = _get_sequence_figure(sequence_model, logic=False)
-        doc.add_root(column(spin, plot))
+        sequence_model = SequenceModel(sequence, analog_map=analog_map, digital_map=digital_map)
+        plot, source, spin, text = _get_sequence_figure(sequence_model, logic=False)
+        doc.add_root(column(spin, plot, text))
 
     apps = {"/": make_doc}
     _start_server(apps)

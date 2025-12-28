@@ -32,7 +32,12 @@ class M4i6622Device(Device):
             analog_channel_index = segmenter._digital_analog_map[digital_channel_index]
             awg_index = segmenter._analog_channels.index(analog_channel_index)
             ttl_to_awg_map[ttl_index] = awg_index
-        self._driver = M4i6622Driver(self._resource, ttl_to_awg_map=ttl_to_awg_map, principal_card=self.is_principal_device, **kwargs)
+        self._driver = M4i6622Driver(
+            self._resource,
+            ttl_to_awg_map=ttl_to_awg_map,
+            principal_card=self.is_principal_device,
+            **kwargs,
+        )
 
         self._max_num_of_blocks: int = None
         self._max_sample_size_per_block: int = None
@@ -79,13 +84,8 @@ class M4i6622Device(Device):
         self._driver._set_sequence_max_segments(num_of_blocks)
 
     def _write_segment_block(self, block_index: int, segment_block: SegmentBlock):
-        self._driver._set_sequence_write_segment(block_index)
         size = len(segment_block.awg_data) // ANALOG_CHANNELS
-        self._driver._set_sequence_write_segment_size(size)
-        data_length = self._driver._define_transfer_buffer(segment_block.awg_data)
-        self._driver._set_data_ready_to_transfer(data_length)
-        self._driver._start_dma_transfer()
-        self._driver._wait_dma_transfer()
+        self._driver._set_segment_data(block_index, size, segment_block.awg_data)
 
     def _cleanup_programmed_segments(self, new_segments: list[M4i6622Segment]):
         """

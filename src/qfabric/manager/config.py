@@ -104,6 +104,9 @@ def load_hardware_config(path: str) -> HardwareConfig:
         raise ValueError("Analog channels defined in the config file have duplicates.")
     if len(digital_channels_defined) != len(set(digital_channels_defined)):
         raise ValueError("Digital channels defined in the config file have duplicates.")
-    if data["start_step"]["digital_channel_synchronize"] not in digital_channels_defined:
+    if "digital_channel_synchronize" not in data["start_step"]:
+        data["start_step"]["digital_channel_synchronize"] = None
+    sync_channel = data["start_step"]["digital_channel_synchronize"]
+    if sync_channel is not None and sync_channel not in digital_channels_defined:
         raise ValueError("Synchronization digital channel is not in the digital channels defined.")
     return HardwareConfig.model_validate(data)

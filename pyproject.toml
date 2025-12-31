@@ -56,7 +56,7 @@ testpaths = ["tests"]
 
 [tool.coverage.report]
 omit = [
-  "src/qfabric/programmer/driver/m4i6622/*",
+  "src/qfabric/programmer/driver/m4i6622.py",
   "src/qfabric/programmer/device/m4i6622.py",
   "src/qfabric/programmer/driver/awg710/*",
   "src/qfabric/programmer/device/awg710.py",

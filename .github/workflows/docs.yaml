@@ -61,7 +61,7 @@ jobs:
           | xargs -0 sha256sum > docs_hash.txt
       - name: Download previous docs hash
         id: download-old-hash
-        uses: dawidd6/action-download-artifact@v11
+        uses: dawidd6/action-download-artifact@v12
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: docs.yaml

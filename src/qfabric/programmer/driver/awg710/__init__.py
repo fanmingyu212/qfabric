@@ -53,23 +53,25 @@ class AWG710Driver:
         command_str = ";".join(commands) + "\n"
         self._control.write(command_str.encode("ascii"))
         query_indices = [commands.index(command) for command in commands if command.endswith("?")]
-        response = self._control.read_until(b"\n", timeout=1)
-        messages = response.decode("ascii").split(";")
-        if len(messages) != len(query_indices) and messages != [""]:
-            raise RuntimeError(
-                f"Got {len(messages)} of responses "
-                f"while expecting {len(query_indices)} responses "
-                f"for command {command_str}"
-            )
+        messages = []
+        if len(query_indices) > 0:
+            response = self._control.read_until(b"\n", timeout=1)
+            messages = response.decode("ascii").split(";")
+            if len(messages) != len(query_indices):
+                raise RuntimeError(
+                    f"Got {len(messages)} of responses "
+                    f"while expecting {len(query_indices)} responses "
+                    f"for command {command_str}"
+                )
 
         self._get_next_error()
         return messages
 
     def _get_next_error(self):
         self._control.write("*ESR?\n".encode("ascii"))
-        self._control.read_until(b"\n", timeout=1)
+        self._control.read_until(b"\n")
         self._control.write((self._commands.get_next_error() + "\n").encode("ascii"))
-        result = self._control.read_until(b"\n", timeout=1).decode("ascii")
+        result = self._control.read_until(b"\n").decode("ascii")
         if int(result.split(",")[0]) != 0:
             raise RuntimeError(f"Failed with error: {result}")
 

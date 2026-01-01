@@ -41,12 +41,16 @@ class _MPLParameters:
         self.process: subprocess.Popen = None
 
 
-def _get_sequence_figure(sequence_model: SequenceModel, logic: bool):
+def _get_sequence_figure(
+    sequence_model: SequenceModel, logic: bool, default_sample_rate_MHz: float = 625
+):
     step_labels = sequence_model.step_labels
     ch_labels = list(reversed(sequence_model.channel_names))
     width = len(step_labels) * 180
     height = len(ch_labels) * 80
-    spin = NumericInput(value=625, low=1e-3, high=10000, mode="float", title="Sample rate (MHz)")
+    spin = NumericInput(
+        value=default_sample_rate_MHz, low=1e-3, high=10000, mode="float", title="Sample rate (MHz)"
+    )
     plot = figure(
         tools=sequence_plot_tools,
         y_range=ch_labels,
@@ -223,7 +227,10 @@ def _start_server(apps):
 
 
 def logic_sequence(
-    sequence: Sequence, analog_map: dict[int, str] = None, digital_map: dict[int, str] = None
+    sequence: Sequence,
+    analog_map: dict[int, str] = None,
+    digital_map: dict[int, str] = None,
+    default_sample_rate_MHz: float = 625,
 ):
     """
     Displays the sequence in the logic mode.
@@ -235,7 +242,10 @@ def logic_sequence(
     clicking on functions in the sequence will not show the details.
 
     Args:
-        sequence (Sequence): sequence to be displayed.
+        sequence (Sequence): Sequence to be displayed.
+        analog_map (dict[int, str]): Optional names displayed for analog channels.
+        digital_map (dict[int, str]): Optional names displayed for digital channels.
+        default_sample_rate_MHz (float): Default sample rate used to visualize functions.
     """
     if analog_map is None:
         analog_map = {}
@@ -244,7 +254,9 @@ def logic_sequence(
 
     def make_doc(doc):
         sequence_model = SequenceModel(sequence, analog_map=analog_map, digital_map=digital_map)
-        plot, source, spin, text = _get_sequence_figure(sequence_model, logic=True)
+        plot, source, spin, text = _get_sequence_figure(
+            sequence_model, logic=True, default_sample_rate_MHz=default_sample_rate_MHz
+        )
         doc.add_root(column(spin, plot, text, margin=(10, 0, 0, 30)))
 
     apps = {"/": make_doc}
@@ -252,7 +264,10 @@ def logic_sequence(
 
 
 def timeline_sequence(
-    sequence: Sequence, analog_map: dict[int, str] = None, digital_map: dict[int, str] = None
+    sequence: Sequence,
+    analog_map: dict[int, str] = None,
+    digital_map: dict[int, str] = None,
+    default_sample_rate_MHz: float = 625,
 ):
     """
     Displays the sequence in the timeline mode.
@@ -264,7 +279,10 @@ def timeline_sequence(
     clicking on functions in the sequence will not show the details.
 
     Args:
-        sequence (Sequence): sequence to be displayed.
+        sequence (Sequence): Sequence to be displayed.
+        analog_map (dict[int, str]): Optional names displayed for analog channels.
+        digital_map (dict[int, str]): Optional names displayed for digital channels.
+        default_sample_rate_MHz (float): Default sample rate used to visualize functions.
     """
     if analog_map is None:
         analog_map = {}
@@ -273,7 +291,9 @@ def timeline_sequence(
 
     def make_doc(doc):
         sequence_model = SequenceModel(sequence, analog_map=analog_map, digital_map=digital_map)
-        plot, source, spin, text = _get_sequence_figure(sequence_model, logic=False)
+        plot, source, spin, text = _get_sequence_figure(
+            sequence_model, logic=False, default_sample_rate_MHz=default_sample_rate_MHz
+        )
         doc.add_root(column(spin, plot, text, margin=(10, 0, 0, 30)))
 
     apps = {"/": make_doc}

@@ -89,7 +89,9 @@ class Planner:
         for sequence in sequences:
             # if a sequence is already saved in `_sequences`, do not duplicate it.
             try:
-                sequence_index = list(self._sequences.values()).index(sequence)
+                sequence_index = list(self._sequences)[
+                    list(self._sequences.values()).index(sequence)
+                ]
             except ValueError:
                 self._sequences[self._sequence_counter] = sequence
                 sequence_index = self._sequence_counter
@@ -100,7 +102,7 @@ class Planner:
             scheduled_sequences.append(sequence_index)
         newly_scheduled = scheduled_sequences * repeats
         self._scheduled_sequences += newly_scheduled
-        return newly_scheduled
+        return list(newly_scheduled)
 
     @property
     def scheduled_sequence_indices(self) -> deque[int]:

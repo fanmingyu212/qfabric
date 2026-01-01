@@ -13,6 +13,8 @@ class AWG710Device(Device):
     """
     Programming interface of the Tektronix AWG710 AWG.
 
+    It does not support programming multiple sequences in the AWG device at the same time.
+
     Args:
         segmenter (AWG710Segmenter): Segmenter for this AWG device.
         resource (str): Resource name of the device.

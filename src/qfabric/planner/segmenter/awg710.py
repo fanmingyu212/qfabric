@@ -6,8 +6,7 @@ from qfabric.planner.segmenter import Segment, Segmenter
 from qfabric.sequence.function import AnalogEmpty, DigitalEmpty
 from qfabric.sequence.step import DeviceStep, Step
 
-SAMPLE_RATE = int(4e9)
-SAMPLE_TIME = 1 / SAMPLE_RATE
+DEFAULT_SAMPLE_RATE = int(4e9)
 
 DIGITAL_CHANNELS = 2
 ANALOG_CHANNELS = 1
@@ -18,19 +17,20 @@ MAX_SEQUENCE_STEPS = 8000
 MAX_LOOP_COUNT = 65536
 
 
-def get_segment_sample_size_from_time(nominal_segment_time: float) -> int:
+def get_segment_sample_size_from_time(nominal_segment_time: float, sample_rate: int) -> int:
     """
     Gets the minimum allowed sample size given the segment duration.
 
     Args:
         nominal_segment_time (float): Desired duration of a segment.
+        sample_rate (int): Sample rate.
 
     Returns:
         int:
             Minimum number of samples of a segment
             longer or equal to the desired duration.
     """
-    nominal_sample_size = int(nominal_segment_time * SAMPLE_RATE)
+    nominal_sample_size = int(nominal_segment_time * sample_rate)
     return get_segment_sample_size(nominal_sample_size)
 
 
@@ -67,6 +67,7 @@ class AWG710Segment(Segment):
         device_step (DeviceStep): Device step containing AWG functions on a device.
         analog_channel (int): Analog channel of the device.
         digital_channels (list[int]): Digital channels of the device.
+        sample_rate (int): Sample rate.
     """
 
     def __init__(
@@ -74,19 +75,20 @@ class AWG710Segment(Segment):
         device_step: DeviceStep,
         analog_channel: int,
         digital_channels: list[int],
+        sample_rate: int,
     ):
         super().__init__(device_step)
         self._analog_channel = analog_channel
         self._digital_channels = digital_channels
-        self.sample_rate = SAMPLE_RATE
-        self.segment_size = get_segment_sample_size_from_time(device_step.duration)
+        self.sample_rate = sample_rate
+        self.segment_size = get_segment_sample_size_from_time(device_step.duration, sample_rate)
 
         self._get_awg_data(device_step, analog_channel, digital_channels)
 
     def _get_awg_data(
         self, device_step: DeviceStep, analog_channel: int, digital_channels: list[int]
     ):
-        times = np.arange(self.segment_size) * SAMPLE_TIME
+        times = np.arange(self.segment_size) / self.sample_rate
         analog_func = device_step.analog_functions.get(analog_channel, AnalogEmpty())
         self.analog_data = analog_func.output(times)
 
@@ -114,9 +116,9 @@ class AWG710Segmenter(Segmenter):
     Supports the Tektronix AWG710 AWG.
 
     Args:
-        device_step (DeviceStep): Device step containing AWG functions on a device.
-        analog_channels: (list[int]): Analog channels of the device.
-        digital_chnanels: (list[int]): Digital channels of the device.
+        analog_channels (list[int]): Analog channels of the device.
+        digital_chnanels (list[int]): Digital channels of the device.
+        sample_rate (int): Sample rate of the AWG. Minimum 50e3 (50 kS/s), maximum 4e9 (4 GS/s).
 
     Attributes:
         _device_steps (list[DeviceStep]):
@@ -133,12 +135,13 @@ class AWG710Segmenter(Segmenter):
             of a sequence.
     """
 
-    def __init__(self, analog_channels: list[int], digital_channels: list[int]):
+    def __init__(self, analog_channels: list[int], digital_channels: list[int], sample_rate: int = DEFAULT_SAMPLE_RATE):
         if len(analog_channels) != ANALOG_CHANNELS:
             raise ValueError(f"The number of analog channels must be {ANALOG_CHANNELS}.")
         if len(digital_channels) != DIGITAL_CHANNELS:
             raise ValueError(f"The number of digital channels must be {DIGITAL_CHANNELS}.")
         super().__init__(analog_channels, digital_channels)
+        self._sample_rate = sample_rate
         self._analog_channel = analog_channels[0]
         self._segments: list[AWG710Segment] = []
 
@@ -156,7 +159,7 @@ class AWG710Segmenter(Segmenter):
         new_segments: list[AWG710Segment] = []
         self._device_step_to_segment_map: dict[int, int] = {}
         for device_step_index, device_step in enumerate(self._device_steps):
-            segment = AWG710Segment(device_step, self._analog_channel, self._digital_channels)
+            segment = AWG710Segment(device_step, self._analog_channel, self._digital_channels, self._sample_rate)
             try:
                 segment_new_saved_index = new_segments.index(segment)
                 self._device_step_to_segment_map[device_step_index] = segment_new_saved_index

@@ -1,0 +1,27 @@
+[config]
+version = 1
+
+[start_step]
+use = false
+duration = 10e-6
+# digital_channel_synchronize = 0  # comment out if no digital channel is used for synchronization
+
+[stop_step]
+use = false
+duration = 10e-6
+
+[[awgs]]
+name = "sdg6022x"
+
+segmenter_module = "qfabric.planner.segmenter.sdg6000x"
+segmenter_class = "SDG6000XSegmenter"
+device_module = "qfabric.programmer.device.sdg6000x"
+device_class = "SDG6000XDevice"
+
+  [awgs.segmenter_config]
+  analog_channels = [0, 1]
+  digital_channels = []
+  sample_rate = 300e6
+
+  [awgs.device_config]
+  resource = "192.168.0.241"

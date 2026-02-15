@@ -7,5 +7,6 @@ would like to share, please feel free to raise a pull request of this page.
 
 * Spectrum M4i.6622: `qFabric`_
 * Tektronix AWG710: `qFabric`_
+* Siglent SDG6000X: `qFabric`_
 
 .. _qFabric: https://github.com/fanmingyu212/qfabric

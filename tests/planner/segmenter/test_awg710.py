@@ -1,15 +1,8 @@
-from qfabric import (
-    ConstantAnalog,
-    DigitalOn,
-    DigitalPulse,
-    Sequence,
-    SineWave,
-    Step,
-)
+from qfabric import ConstantAnalog, DigitalOn, DigitalPulse, Sequence, SineWave, Step
 from qfabric.planner.segmenter.awg710 import (
+    DEFAULT_SAMPLE_RATE,
     MIN_SAMPLES_PER_SEGMENT_BLOCK,
     MULTIPLE_SAMPLES_PER_SEGMENT_BLOCK,
-    SAMPLE_RATE,
     AWG710Segment,
     AWG710Segmenter,
     get_segment_sample_size,
@@ -20,14 +13,14 @@ from qfabric.sequence.step import StartStep, StopStep
 
 def test_get_segment_sample_size_from_time():
     t = 0
-    out = get_segment_sample_size_from_time(t)
+    out = get_segment_sample_size_from_time(t, DEFAULT_SAMPLE_RATE)
     assert out == MIN_SAMPLES_PER_SEGMENT_BLOCK
 
     t = 1e-6
-    out = get_segment_sample_size_from_time(t)
+    out = get_segment_sample_size_from_time(t, DEFAULT_SAMPLE_RATE)
     assert out % MULTIPLE_SAMPLES_PER_SEGMENT_BLOCK == 0
-    assert out >= int(t * SAMPLE_RATE)
-    assert out < int(t * SAMPLE_RATE + MULTIPLE_SAMPLES_PER_SEGMENT_BLOCK + 1)
+    assert out >= int(t * DEFAULT_SAMPLE_RATE)
+    assert out < int(t * DEFAULT_SAMPLE_RATE + MULTIPLE_SAMPLES_PER_SEGMENT_BLOCK + 1)
 
 
 def test_get_segment_sample_size():
@@ -50,7 +43,7 @@ def test_AWG710Segment_basic():
     step.add_digital_function(1, DigitalPulse(1e-4, 2e-4))
 
     device_step = step.get_functions_on_device([0], [0, 1])
-    seg = AWG710Segment(device_step, 0, [0, 1])
+    seg = AWG710Segment(device_step, 0, [0, 1], DEFAULT_SAMPLE_RATE)
 
     assert seg.segment_size >= MIN_SAMPLES_PER_SEGMENT_BLOCK
     assert len(seg.analog_data) == seg.segment_size
@@ -67,9 +60,9 @@ def test_AWG710Segment_equality():
     s2.add_analog_function(1, ConstantAnalog(0.5))
     ds2 = s2.get_functions_on_device([0], [0, 1])
 
-    seg1 = AWG710Segment(ds1, 0, [0, 1])
-    seg2 = AWG710Segment(ds1, 0, [0, 1])
-    seg3 = AWG710Segment(ds2, 0, [0, 1])
+    seg1 = AWG710Segment(ds1, 0, [0, 1], DEFAULT_SAMPLE_RATE)
+    seg2 = AWG710Segment(ds1, 0, [0, 1], DEFAULT_SAMPLE_RATE)
+    seg3 = AWG710Segment(ds2, 0, [0, 1], DEFAULT_SAMPLE_RATE)
 
     assert seg1 == seg2
     assert seg1 != seg3  # different DeviceStep

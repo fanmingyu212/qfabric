@@ -74,4 +74,4 @@ If you want to develop `qFabric`, you can fork this project, clone the fork, nav
 
 ### Beta test
 
-AWG implementations are still being tested and may change. Estimated first stable release date is Jan 2026.
+Support for M4i.6622 AWG is untested.

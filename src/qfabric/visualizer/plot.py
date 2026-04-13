@@ -5,7 +5,7 @@ import sys
 import warnings
 from functools import partial
 
-from bokeh.core.serialization import BokehUserWarning
+from bokeh.util.warnings import BokehUserWarning
 
 warnings.filterwarnings("ignore", category=BokehUserWarning)
 
